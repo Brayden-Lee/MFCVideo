@@ -90,7 +90,9 @@ public:
 	// й╣ож
 protected:
 	char m_saveDataPath[MAX_PATH];
-	vector<double> speed;
+	vector<double> speed_X;
+	vector<double> speed_Y;
+	vector<double> speed_Z;
 	vector<struct Pos> m_obstacle;
 	vector<struct Loc> m_locOnmap;
 	int m_index_speed;
@@ -134,9 +136,9 @@ public:
 	afx_msg void loadData();
 	afx_msg void OnNMHoverNi(NMHDR *pNMHDR, LRESULT *pResult);
 
-	afx_msg void load_speed_data(int type);    // Guandao data
+	afx_msg void load_speed_data();    // Guandao data
 	afx_msg void load_radar_data();    // Radar data
-	afx_msg void DrawSpeed();
+	afx_msg void DrawSpeed(int type, bool firsttime);
 	afx_msg void DrawOverSpeed(double *x, double *y, int n);
 	afx_msg void DrawRadarData();
 	afx_msg void DrawMeter(double speed);
@@ -151,5 +153,10 @@ public:
 	afx_msg void OnBnClickedRadioSpeedZ();
 	afx_msg void OnBnClickedCheckOverspeed();
 	afx_msg void DrawRadarPerpare();
+	afx_msg void OnBnClickedDispalyValue();
+	afx_msg void StopTimer();
+	afx_msg void StartTimer();
+	afx_msg void OnBnClickedSetAlert();
+	afx_msg void OnBnClickedAlertDetail();
 };
 #pragma once

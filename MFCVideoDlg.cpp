@@ -7,6 +7,8 @@
 #include "MFCVideoDlg.h"
 #include "afxdialogex.h"
 #include "OpitionDialog.h"
+#include "ValueDisplayDlg.h"
+#include "AlertDisplayDlg.h"
 #include "constant.h"
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -88,6 +90,9 @@ BEGIN_MESSAGE_MAP(CMFCVideoDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_RADIO_SPEED_Y, &CMFCVideoDlg::OnBnClickedRadioSpeedY)
 	ON_BN_CLICKED(IDC_RADIO_SPEED_Z, &CMFCVideoDlg::OnBnClickedRadioSpeedZ)
 	ON_BN_CLICKED(IDC_CHECK_OVERSPEED, &CMFCVideoDlg::OnBnClickedCheckOverspeed)
+	ON_BN_CLICKED(IDC_DISPALY_VALUE, &CMFCVideoDlg::OnBnClickedDispalyValue)
+	ON_BN_CLICKED(IDC_SET_ALERT, &CMFCVideoDlg::OnBnClickedSetAlert)
+	ON_BN_CLICKED(IDC_ALERT_DETAIL, &CMFCVideoDlg::OnBnClickedAlertDetail)
 END_MESSAGE_MAP()
 
 
@@ -222,7 +227,9 @@ void CMFCVideoDlg::init()
 
 void CMFCVideoDlg::release_mem()
 {
-	speed.clear();
+	speed_X.clear();
+	speed_Y.clear();
+	speed_Z.clear();
 	m_obstacle.clear();
 	m_locOnmap.clear();
 	path_video1.clear();
@@ -366,12 +373,34 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 	case TIMER_CURVE:
 	{
 		m_index_speed++;
+		int type;
+		if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_X))->GetCheck()) {
+			type = SPEED_X;
+		}
+		else if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_Y))->GetCheck()) {
+			type = SPEED_Y;
+		}
+		else {
+			type = SPEED_Z;
+		}
 		double x[30], y[30];
-		int row = speed.size();
+		int row = speed_X.size();
+		m_index_speed = m_index_speed % row;
 		for (int i = 0; i < 30; i++)
 		{
 			x[i] = i;
-			y[i] = speed[(m_index_speed + i) % row];    // 每次显示30个数
+			switch (type)
+			{
+			case SPEED_X:
+				y[i] = speed_X[(m_index_speed + i) % row];    // 每次显示30个数
+				break;
+			case SPEED_Y:
+				y[i] = speed_Y[(m_index_speed + i) % row];
+				break;
+			default:
+				y[i] = speed_Z[(m_index_speed + i) % row];
+				break;
+			}
 		}
 		//m_ChartCtrl_Curve1.EnableRefresh(false);
 		CChartLineSerie *pLineSerie;
@@ -382,6 +411,18 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 		//m_ChartCtrl_Curve1.EnableRefresh(true);
 		if (((CButton*)GetDlgItem(IDC_CHECK_OVERSPEED))->GetCheck())
 			DrawOverSpeed(x, y, 30);
+
+		CWnd *pwnd = GetDlgItem(IDC_CURVE_1);     //获取窗口句柄
+		CDC *pdc = pwnd->GetDC();
+		CRect rect;
+		m_ChartCtrl_Curve1.GetClientRect(&rect);
+		int width = rect.Width();
+		int height = rect.Height();
+		CPen ppenRed(PS_SOLID, 2, RGB(255, 0, 0));
+		CGdiObject *pOldpen = pdc->SelectObject(&ppenRed);
+		pdc->MoveTo(width / 2, height);
+		pdc->LineTo(width / 2, 0);
+		pwnd->ReleaseDC(pdc);
 		break;
 	}
 	case TIMER_RADAR:
@@ -392,6 +433,42 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 			m_index_radar = 0;
 	}
 	CDialogEx::OnTimer(nIDEvent);
+}
+
+void CMFCVideoDlg::StopTimer()
+{
+	KillTimer(TIMER_VIDEO_1);
+	KillTimer(TIMER_VIDEO_2);
+	KillTimer(TIMER_VIDEO_3);
+	KillTimer(TIMER_VIDEO_4);
+	KillTimer(TIMER_PROGRESS);
+	KillTimer(TIMER_CURVE);
+	KillTimer(TIMER_RADAR);
+}
+
+void CMFCVideoDlg::StartTimer()
+{
+	UINT eslapse;
+	if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
+		eslapse = 20;
+	}
+	else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
+		eslapse = 15;
+	}
+	else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
+		eslapse = 8;
+	}
+	else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
+		eslapse = 5;
+	}
+	SetTimer(TIMER_VIDEO_1, eslapse, NULL);
+	SetTimer(TIMER_VIDEO_2, eslapse, NULL);
+	SetTimer(TIMER_VIDEO_3, eslapse, NULL);
+	SetTimer(TIMER_VIDEO_4, eslapse, NULL);
+
+	SetTimer(TIMER_PROGRESS, 200, NULL);
+	SetTimer(TIMER_CURVE, 50, NULL);
+	SetTimer(TIMER_RADAR, 100, NULL);
 }
 
 void CMFCVideoDlg::OnClose()   // 整个退出
@@ -546,15 +623,7 @@ void CMFCVideoDlg::OnBnClickedVideoPlay()   //button 播放视频
 	CString path;
 	path = m_resDir + _T("\\") + name_GuanDao;
 	Excel_Guandao.OpenExcel(path);    // 可能使用的单例模式，只能有一个对象
-	if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_X))->GetCheck()) {
-		load_speed_data(SPEED_X);
-	}
-	else if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_Y))->GetCheck()) {
-		load_speed_data(SPEED_Y);
-	}
-	else {
-		load_speed_data(SPEED_Z);
-	}
+	load_speed_data();
 
 	path = m_resDir + _T("\\") + name_Radar;
 	Excel_Radar.OpenExcel(path);
@@ -618,7 +687,17 @@ void CMFCVideoDlg::OnBnClickedVideoStop()     //button 暂停
 		SetTimer(TIMER_VIDEO_4, eslapse, NULL);
 
 		// 绘制惯导数据
-		DrawSpeed();
+		int type;
+		if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_X))->GetCheck()) {
+			type = SPEED_X;
+		}
+		else if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_Y))->GetCheck()) {
+			type = SPEED_Y;
+		}
+		else {
+			type = SPEED_Z;
+		}
+		DrawSpeed(type, true);
 		// 绘制雷达数据
 		DrawRadarPerpare();
 
@@ -849,61 +928,27 @@ void CMFCVideoDlg::OnNMHoverNi(NMHDR *pNMHDR, LRESULT *pResult)
 }
 
 // 加载数据
-void CMFCVideoDlg::load_speed_data(int type)
+void CMFCVideoDlg::load_speed_data()
 {
-	speed.clear();    // 清空向量
-	//CString path;
+	speed_X.clear();
+	speed_Y.clear();
+	speed_Z.clear();
 	CString text;
 	int row;
 	int i;
-	switch (type)
+	row = Excel_Guandao.GetRowCount();
+	for (i = 2; i <= row; i++)
 	{
-	case SPEED_X:
-		//path = m_resDir + _T("\\") + name_GuanDao;
-		//MessageBox(path);
-		//Excel_Guandao.OpenExcel(path);
-		row = Excel_Guandao.GetRowCount();
-		//text.Format(_T("%d"), row);
-		//MessageBox(text);
-		//speed.resize(row);
-		for (i = 2; i <= row; i++)
-		{
-			text = Excel_Guandao.GetText(i, 2);    // Excel下标从1开始
-			//MessageBox(text);
-			speed.push_back(atof(text));    // CString to double
-		}
-		//text.Format(_T("%lf"), atof(text));
-		//MessageBox(text);
-		m_index_speed = 0;
-		//Excel_Guandao.Close();
-		break;
-	case SPEED_Y:
-		//path = m_resDir + _T("\\") + name_GuanDao;
-		//Excel_Guandao.OpenExcel(path);
-		row = Excel_Guandao.GetRowCount();
-		for (i = 2; i <= row; i++)
-		{
-			text = Excel_Guandao.GetText(i, 3);    // Excel下标从1开始
-			speed.push_back(atof(text));    // CString to double
-		}
-		m_index_speed = 0;
-		//Excel_Guandao.Close();
-		break;
-	case SPEED_Z:
-		//path = m_resDir + _T("\\") + name_GuanDao;
-		//Excel_Guandao.OpenExcel(path);
-		row = Excel_Guandao.GetRowCount();
-		for (i = 2; i <= row; i++)
-		{
-			text = Excel_Guandao.GetText(i, 4);    // Excel下标从1开始
-			speed.push_back(atof(text));    // CString to double
-		}
-		m_index_speed = 0;
-		//Excel_Guandao.Close();
-		break;
-	default:
-		break;
+		text = Excel_Guandao.GetText(i, 2);    // Excel下标从1开始
+		speed_X.push_back(atof(text));    // CString to double
+
+		text = Excel_Guandao.GetText(i, 3);
+		speed_Y.push_back(atof(text));
+
+		text = Excel_Guandao.GetText(i, 4);
+		speed_Z.push_back(atof(text));
 	}
+	m_index_speed = 0;
 }
 
 void CMFCVideoDlg::load_radar_data()
@@ -934,20 +979,54 @@ void CMFCVideoDlg::load_radar_data()
 	}
 }
 
-void CMFCVideoDlg::DrawSpeed()
+void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 {
 	double x[30], y[30];
-	int row = speed.size();
-	//CString text;
-	//text.Format(_T("%d"), row);
-	//MessageBox(text);
-	for (int i = 0; i < 30; i++)
+	int row = speed_X.size();
+	if (firsttime)
 	{
-		//text.Format(_T("%lf"), speed[i]);
-		//MessageBox(text);
-		x[i] = i;
-		y[i] = speed[(m_index_speed + i) % row];    // 每次显示30个数
+		for (int i = 0; i < 15; i++)
+		{
+			x[i] = i;
+			y[i] = 0;
+		}
+		for (int i = 15; i < 30; i++)
+		{
+			x[i] = i;
+			switch (type)
+			{
+			case SPEED_X:
+				y[i] = speed_X[(m_index_speed + i) % row];    // 每次显示30个数
+				break;
+			case SPEED_Y:
+				y[i] = speed_Y[(m_index_speed + i) % row];
+				break;
+			default:
+				y[i] = speed_Z[(m_index_speed + i) % row];
+				break;
+			}
+		}
 	}
+	else
+	{
+		for (int i = 0; i < 30; i++)
+		{
+			x[i] = i;
+			switch (type)
+			{
+			case SPEED_X:
+				y[i] = speed_X[(m_index_speed + i) % row];    // 每次显示30个数
+				break;
+			case SPEED_Y:
+				y[i] = speed_Y[(m_index_speed + i) % row];
+				break;
+			default:
+				y[i] = speed_Z[(m_index_speed + i) % row];
+				break;
+			}
+		}
+	}
+	
 	//m_ChartCtrl_Curve1.EnableRefresh(false);
 	CChartLineSerie *pLineSerie;
 	m_ChartCtrl_Curve1.RemoveAllSeries();//先清空
@@ -955,6 +1034,7 @@ void CMFCVideoDlg::DrawSpeed()
 	pLineSerie->SetSeriesOrdering(poNoOrdering);
 	pLineSerie->AddPoints(x, y, 30);
 	pLineSerie->SetWidth(3);
+	
 	//m_ChartCtrl_Curve1.EnableRefresh(true);
 	if (((CButton*)GetDlgItem(IDC_CHECK_OVERSPEED))->GetCheck())
 		DrawOverSpeed(x, y, 30);
@@ -1053,7 +1133,7 @@ void CMFCVideoDlg::DrawMeter(double speed)
 
 void CMFCVideoDlg::DrawMap()
 {
-	LoadMap();
+	//LoadMap();
 	//ShowMap();
 	struct Loc loc = m_locOnmap[m_index_radar];
 	DrawMeter(loc.speed);
@@ -1083,8 +1163,7 @@ void CMFCVideoDlg::OnBnClickedRadioSpeedX()
 	((CButton *)GetDlgItem(IDC_RADIO_SPEED_Y))->SetCheck(FALSE);
 	((CButton *)GetDlgItem(IDC_RADIO_SPEED_Z))->SetCheck(FALSE);
 	KillTimer(TIMER_CURVE);
-	load_speed_data(SPEED_X);
-	DrawSpeed();
+	DrawSpeed(SPEED_X, false);
 }
 
 
@@ -1094,8 +1173,7 @@ void CMFCVideoDlg::OnBnClickedRadioSpeedY()
 	((CButton *)GetDlgItem(IDC_RADIO_SPEED_Y))->SetCheck(TRUE);
 	((CButton *)GetDlgItem(IDC_RADIO_SPEED_Z))->SetCheck(FALSE);
 	KillTimer(TIMER_CURVE);
-	load_speed_data(SPEED_Y);
-	DrawSpeed();
+	DrawSpeed(SPEED_Y, false);
 }
 
 
@@ -1105,8 +1183,7 @@ void CMFCVideoDlg::OnBnClickedRadioSpeedZ()
 	((CButton *)GetDlgItem(IDC_RADIO_SPEED_Y))->SetCheck(FALSE);
 	((CButton *)GetDlgItem(IDC_RADIO_SPEED_Z))->SetCheck(TRUE);
 	KillTimer(TIMER_CURVE);
-	load_speed_data(SPEED_Z);
-	DrawSpeed();
+	DrawSpeed(SPEED_Z, false);
 }
 
 
@@ -1122,19 +1199,19 @@ void CMFCVideoDlg::LoadMap()
 {
 	// 加载地图
 	ATL::CImage image;
-	image.Load("D:\\Workstation\\Works\\data\\map.png");
-	//image.Load("res\\map.png");
+	//image.Load("D:\\Workstation\\Works\\data\\map.png");
+	image.Load("res\\map.png");
 	CRect rectCtrl;
 	CWnd *pWnd = GetDlgItem(IDC_ROAD_MAP);
 	pWnd->Invalidate();
 	pWnd->UpdateWindow();
 	pWnd->GetClientRect(&rectCtrl);
 	CDC *pDc = pWnd->GetDC();
-	pDc->Rectangle(0, 0, rectCtrl.right, rectCtrl.bottom);
+	//pDc->Rectangle(0, 0, rectCtrl.right, rectCtrl.bottom);
 	SetStretchBltMode(pDc->m_hAttribDC, STRETCH_HALFTONE);
 	((CStatic*)GetDlgItem(IDC_ROAD_MAP))->SetBitmap(NULL);
-	CRect rect(0, 0, 1000, 1000);
-	image.Draw(pDc->m_hDC, rect);
+	//CRect rect(0, 0, 1000, 1000);
+	image.Draw(pDc->m_hDC, rectCtrl);
 	image.Destroy();
 	pWnd->ReleaseDC(pDc);
 }
@@ -1142,8 +1219,8 @@ void CMFCVideoDlg::LoadMap()
 void CMFCVideoDlg::ShowMap()
 {
 	ATL::CImage image;
-	image.Load("D:\\Workstation\\Works\\data\\map.png");
-	//image.Load("res\\map.png");
+	//image.Load("D:\\Workstation\\Works\\data\\map.png");
+	image.Load("res\\map.png");
 	CRect rectCtrl;
 	CWnd *pWnd = GetDlgItem(IDC_ROAD_MAP);
 	pWnd->Invalidate();
@@ -1197,4 +1274,31 @@ void CMFCVideoDlg::DrawCar()
 		flag = true;
 	}
 	pwnd->ReleaseDC(pdc);
+}
+
+void CMFCVideoDlg::OnBnClickedDispalyValue()
+{
+	CValueDisplayDlg valuedisplayDlg;
+	StopTimer();
+	valuedisplayDlg.speed_x.Format("%lf", speed_X[m_index_speed]);
+	valuedisplayDlg.speed_y.Format("%lf", speed_Y[m_index_speed]);
+	valuedisplayDlg.speed_z.Format("%lf", speed_Z[m_index_speed]);
+	valuedisplayDlg.DoModal();
+	StartTimer();
+}
+
+
+void CMFCVideoDlg::OnBnClickedSetAlert()
+{
+	StopTimer();
+	//StartTimer();
+}
+
+
+void CMFCVideoDlg::OnBnClickedAlertDetail()
+{
+	CAlertDisplayDlg alertDlg;
+	StopTimer();
+	alertDlg.DoModal();
+	StartTimer();
 }
