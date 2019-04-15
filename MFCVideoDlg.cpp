@@ -66,6 +66,7 @@ void CMFCVideoDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_OBSTACLE_PANEL, m_Obstacle_Panel);
 	DDX_Control(pDX, IDC_METER_PANEL, m_Meter_Panel);
 	DDX_Control(pDX, IDC_ROAD_MAP, m_Map);
+	DDX_Control(pDX, IDC_VALUE, curve_value);
 }
 
 BEGIN_MESSAGE_MAP(CMFCVideoDlg, CDialogEx)
@@ -89,7 +90,6 @@ BEGIN_MESSAGE_MAP(CMFCVideoDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_RADIO_SPEED_X, &CMFCVideoDlg::OnBnClickedRadioSpeedX)
 	ON_BN_CLICKED(IDC_RADIO_SPEED_Y, &CMFCVideoDlg::OnBnClickedRadioSpeedY)
 	ON_BN_CLICKED(IDC_RADIO_SPEED_Z, &CMFCVideoDlg::OnBnClickedRadioSpeedZ)
-	ON_BN_CLICKED(IDC_CHECK_OVERSPEED, &CMFCVideoDlg::OnBnClickedCheckOverspeed)
 	ON_BN_CLICKED(IDC_DISPALY_VALUE, &CMFCVideoDlg::OnBnClickedDispalyValue)
 	ON_BN_CLICKED(IDC_SET_ALERT, &CMFCVideoDlg::OnBnClickedSetAlert)
 	ON_BN_CLICKED(IDC_ALERT_DETAIL, &CMFCVideoDlg::OnBnClickedAlertDetail)
@@ -139,7 +139,7 @@ BOOL CMFCVideoDlg::OnInitDialog()
 	((CButton *)GetDlgItem(IDC_RADIO_SPEED_Y))->SetCheck(FALSE);
 	((CButton *)GetDlgItem(IDC_RADIO_SPEED_Z))->SetCheck(FALSE);
 
-	((CButton*)GetDlgItem(IDC_CHECK_OVERSPEED))->SetCheck(FALSE);
+	GetDlgItem(IDC_VALUE)->ShowWindow(SW_HIDE);
 
 	m_ProgressCtrl = (CProgressCtrl *)GetDlgItem(IDC_PROGRESS_ALL_VIDEO);
 	GetCurrentDirectory(MAX_PATH, m_saveDataPath);
@@ -408,21 +408,12 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 		pLineSerie = m_ChartCtrl_Curve1.CreateLineSerie();
 		pLineSerie->AddPoints(x, y, 30);
 		pLineSerie->SetWidth(3);
+		GetDlgItem(IDC_VALUE)->ShowWindow(SW_SHOW);
+		CString text;
+		text.Format(_T("%lf"), y[m_cur_index]);
+		curve_value.SetWindowTextA(text);
+		//DrawOverSpeed(x, y, 30);
 		//m_ChartCtrl_Curve1.EnableRefresh(true);
-		if (((CButton*)GetDlgItem(IDC_CHECK_OVERSPEED))->GetCheck())
-			DrawOverSpeed(x, y, 30);
-
-		CWnd *pwnd = GetDlgItem(IDC_CURVE_1);     //获取窗口句柄
-		CDC *pdc = pwnd->GetDC();
-		CRect rect;
-		m_ChartCtrl_Curve1.GetClientRect(&rect);
-		int width = rect.Width();
-		int height = rect.Height();
-		CPen ppenRed(PS_SOLID, 2, RGB(255, 0, 0));
-		CGdiObject *pOldpen = pdc->SelectObject(&ppenRed);
-		pdc->MoveTo(width / 2, height);
-		pdc->LineTo(width / 2, 0);
-		pwnd->ReleaseDC(pdc);
 		break;
 	}
 	case TIMER_RADAR:
@@ -1027,7 +1018,7 @@ void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 		}
 	}
 	
-	//m_ChartCtrl_Curve1.EnableRefresh(false);
+	m_ChartCtrl_Curve1.EnableRefresh(false);
 	CChartLineSerie *pLineSerie;
 	m_ChartCtrl_Curve1.RemoveAllSeries();//先清空
 	pLineSerie = m_ChartCtrl_Curve1.CreateLineSerie();
@@ -1035,9 +1026,14 @@ void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 	pLineSerie->AddPoints(x, y, 30);
 	pLineSerie->SetWidth(3);
 	
-	//m_ChartCtrl_Curve1.EnableRefresh(true);
-	if (((CButton*)GetDlgItem(IDC_CHECK_OVERSPEED))->GetCheck())
-		DrawOverSpeed(x, y, 30);
+	m_cur_index = 15;
+	GetDlgItem(IDC_VALUE)->ShowWindow(SW_SHOW);
+	CString text;
+	text.Format(_T("%lf"), y[m_cur_index]);
+	curve_value.SetWindowTextA(text);
+	m_ChartCtrl_Curve1.EnableRefresh(true);
+	m_ChartCtrl_Curve1.cur_Enable = true;
+	//DrawOverSpeed(x, y, 30);
 	SetTimer(TIMER_CURVE, 50, NULL);
 }
 
@@ -1051,24 +1047,51 @@ void CMFCVideoDlg::DrawOverSpeed(double *x, double *y, int n)
 	CRect rect;
 	GetDlgItem(IDC_CURVE_1)->GetClientRect(&rect);
 	int height = rect.Height();
-
-	// test
-	int seed = rand() % 5;
-	if (seed == 0)
-		seed = 1;
+	int wight = rect.Width();
 
 	CChartLineSerie *pLineSerie;
 	pLineSerie = m_ChartCtrl_Curve1.CreateLineSerie();
 	pLineSerie->SetWidth(3);
+
+	CPoint p[3] = { CPoint(wight / 2,height - 5),CPoint(wight / 2 - 2, height),CPoint(wight / 2 + 2,height) };
 	for (int i = 0; i < n; i++)
 	{
-		if ((i % seed) != 0)
+		if (i != m_cur_index)
 			continue;
-		CPoint ScreenPoint;
-		pLineSerie->ValueToScreen(x[i], y[i], ScreenPoint);
-		pDC->MoveTo(ScreenPoint.x, height - 20);
-		pDC->LineTo(ScreenPoint.x, height - 40);
+		//CPoint ScreenPoint;
+		//pLineSerie->ValueToScreen(x[i], y[i], ScreenPoint);
+		//pDC->MoveTo(ScreenPoint.x, height - 20);
+		//pDC->LineTo(ScreenPoint.x, height - 40);
+		pDC->Polygon(p, 3);
 	}
+	pWnd->ReleaseDC(pDC);
+}
+
+void CMFCVideoDlg::DrawCurrLabel()
+{
+	CWnd *pWnd = GetDlgItem(IDC_CURVE_1);
+	CDC *pDC = pWnd->GetDC();
+	CPen pen(PS_SOLID, 2, RGB(0, 255, 0));
+	CPen *pOldpen = pDC->SelectObject(&pen);
+
+	CRect rect;
+	GetDlgItem(IDC_CURVE_1)->GetClientRect(&rect);
+	int height = rect.Height();
+	int weight = rect.Width();
+
+	CString text;
+	text.Format(_T("%d"), height);
+	//MessageBox(text);
+	CChartLineSerie *pLineSerie;
+	pLineSerie = m_ChartCtrl_Curve1.CreateLineSerie();
+	pLineSerie->SetWidth(3);
+
+	CPoint ScreenPoint;
+	pLineSerie->ValueToScreen(m_cur_index, 0.0, ScreenPoint);
+	pDC->MoveTo(ScreenPoint.x, 0);
+	pDC->LineTo(ScreenPoint.x, height);
+	text.Format(_T("%lf"), ScreenPoint.x);
+	//MessageBox(text);
 	pWnd->ReleaseDC(pDC);
 }
 
@@ -1184,15 +1207,6 @@ void CMFCVideoDlg::OnBnClickedRadioSpeedZ()
 	((CButton *)GetDlgItem(IDC_RADIO_SPEED_Z))->SetCheck(TRUE);
 	KillTimer(TIMER_CURVE);
 	DrawSpeed(SPEED_Z, false);
-}
-
-
-void CMFCVideoDlg::OnBnClickedCheckOverspeed()
-{
-	if (((CButton*)GetDlgItem(IDC_CHECK_OVERSPEED))->GetCheck())
-		((CButton*)GetDlgItem(IDC_CHECK_OVERSPEED))->SetCheck(TRUE);
-	else
-		((CButton*)GetDlgItem(IDC_CHECK_OVERSPEED))->SetCheck(FALSE);
 }
 
 void CMFCVideoDlg::LoadMap()

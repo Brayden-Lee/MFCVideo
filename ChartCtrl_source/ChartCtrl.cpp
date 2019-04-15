@@ -118,6 +118,7 @@ CChartCtrl::CChartCtrl()
 	m_bToolBarCreated = false;
 	m_pMouseListener = NULL;
 	m_bMouseVisible = true;
+	cur_Enable = false;
 }
 
 CChartCtrl::~CChartCtrl()
@@ -154,6 +155,7 @@ CChartCtrl::~CChartCtrl()
 
 BEGIN_MESSAGE_MAP(CChartCtrl, CWnd)
 	//{{AFX_MSG_MAP(CChartCtrl)
+	ON_WM_TIMER()
 	ON_WM_PAINT()
 	ON_WM_ERASEBKGND()
 	ON_WM_MOUSEMOVE()
@@ -173,6 +175,22 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // CChartCtrl message handlers
 
+void CChartCtrl::OnTimer(UINT_PTR nIDEvent)
+{
+	MessageBox("hello");
+	KillTimer(1);
+	CPaintDC dc(this);
+	CPen pen(PS_SOLID, 2, RGB(0, 0, 255));
+	CPen *pOldpen = dc.SelectObject(&pen);
+	CRect rect;
+	GetClientRect(&rect);
+	int height = rect.Height();
+	int wight = rect.Width();
+	CPoint p[3] = { CPoint(wight / 2,height - 10),CPoint(wight / 2 - 5, height),CPoint(wight / 2 + 5,height) };
+	dc.Polygon(p, 3);
+	ReleaseDC(&dc);
+}
+
 void CChartCtrl::OnPaint() 
 {
 	CPaintDC dc(this); // device context for painting
@@ -188,7 +206,8 @@ void CChartCtrl::OnPaint()
     GetClientRect(&rect);
 	dc.BitBlt(0, 0, rect.Width(), rect.Height(), 
 			  &m_BackgroundDC, 0, 0, SRCCOPY) ;
-
+	//TransparentBlt(dc.m_hDC, 0, 0, rect.Width(), rect.Height(), m_BackgroundDC.m_hDC, 0, 0, rect.Width(), rect.Height(), RGB(236, 233, 216));
+	//dc.SetBkMode(TRANSPARENT);
 	// Draw the zoom rectangle
 	if (m_bZoomEnabled && m_bLMouseDown)
 	{
@@ -205,11 +224,41 @@ void CChartCtrl::OnPaint()
 		DeleteObject(NewPen);
 	}
 
+	// 绘制当前指针
+	if (cur_Enable)
+	{
+		
+		CPen pen1(PS_SOLID, 2, RGB(0, 255, 0));
+		CPen *pOldpen1 = dc.SelectObject(&pen1);
+		CPoint top = m_PlottingRect.TopLeft();
+		CPoint bottom = m_PlottingRect.BottomRight();
+		top.x = (bottom.x + top.x) / 2;
+		bottom.x = top.x;
+		dc.MoveTo(top);
+		dc.LineTo(bottom);
+		
+		//CPen pen1(PS_SOLID, 2, RGB(0, 255, 0));
+		//CPen *pOldpen1 = dc.SelectObject(&pen1);
+		//dc.MoveTo(rect.Width() / 2, 0);
+		//dc.LineTo(rect.Width() / 2, rect.Height());
+
+		int wight = m_PlottingRect.Width();
+		int height = m_PlottingRect.Height();
+		CPoint p[3] = { CPoint(wight / 2,height - 10),CPoint(wight / 2 - 5, height),CPoint(wight / 2 + 5,height) };
+		dc.Polygon(p, 3);
+
+		dc.SelectObject(pOldpen1);
+		DeleteObject(pen1);
+		//SetTimer(1, 10, NULL);
+	}
+
 	// Draw the cursors. 
 	TCursorMap::iterator iter = m_mapCursors.begin();
 	for (iter; iter!=m_mapCursors.end(); iter++)
 		iter->second->Draw(&dc);
+	ReleaseDC(&dc);
 }
+
 
 BOOL CChartCtrl::OnEraseBkgnd(CDC* ) 
 {

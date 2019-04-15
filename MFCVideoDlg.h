@@ -96,6 +96,7 @@ protected:
 	vector<struct Pos> m_obstacle;
 	vector<struct Loc> m_locOnmap;
 	int m_index_speed;
+	int m_cur_index;
 	int m_index_radar;
 	HICON m_hIcon;
 
@@ -115,6 +116,7 @@ public:
 	CStatic m_Obstacle_Panel;
 	CMeter	m_Meter_Panel;
 	CStatic m_Map;
+	CStatic curve_value;
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnClose();
 	afx_msg void OnBnClickedVideoClose();
@@ -140,6 +142,7 @@ public:
 	afx_msg void load_radar_data();    // Radar data
 	afx_msg void DrawSpeed(int type, bool firsttime);
 	afx_msg void DrawOverSpeed(double *x, double *y, int n);
+	afx_msg void DrawCurrLabel();
 	afx_msg void DrawRadarData();
 	afx_msg void DrawMeter(double speed);
 	afx_msg void DrawMap();
@@ -151,7 +154,6 @@ public:
 	afx_msg void OnBnClickedRadioSpeedX();
 	afx_msg void OnBnClickedRadioSpeedY();
 	afx_msg void OnBnClickedRadioSpeedZ();
-	afx_msg void OnBnClickedCheckOverspeed();
 	afx_msg void DrawRadarPerpare();
 	afx_msg void OnBnClickedDispalyValue();
 	afx_msg void StopTimer();
