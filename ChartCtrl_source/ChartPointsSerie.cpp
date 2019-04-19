@@ -123,6 +123,16 @@ void CChartPointsSerie::Draw(CDC *pDC)
 		case ptTriangle:
 			{
 				CPoint TrPoints[3];
+				// ADD
+				if (m_pParentCtrl->cur_Enable)
+				{
+					CRect rect = m_pParentCtrl->GetPlottingRect();
+					CPoint bottom = rect.BottomRight();
+					CPoint ori_br = PointRect.BottomRight();
+					CPoint ori_tl = PointRect.TopLeft();
+					PointRect.SetRect(ori_tl.x, bottom.y - 10, ori_br.x, bottom.y);
+				}
+				// END
 				TrPoints[0].x = PointRect.left;
 				TrPoints[0].y = PointRect.bottom;
 				TrPoints[1].x = PointRect.right;
@@ -221,6 +231,16 @@ void CChartPointsSerie::DrawAll(CDC *pDC)
 		case ptTriangle:
 			{
 				CPoint TrPoints[3];
+				// ADD
+				if (m_pParentCtrl->cur_Enable)
+				{
+					CRect rect = m_pParentCtrl->GetPlottingRect();
+					CPoint bottom = rect.BottomRight();
+					CPoint ori_br = PointRect.BottomRight();
+					CPoint ori_tl = PointRect.TopLeft();
+					PointRect.SetRect(ori_tl.x, bottom.y - 10, ori_br.x, bottom.y);
+				}
+				// END
 				TrPoints[0].x = PointRect.left;
 				TrPoints[0].y = PointRect.bottom;
 				TrPoints[1].x = PointRect.right;

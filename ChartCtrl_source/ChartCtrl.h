@@ -453,11 +453,12 @@ public:
 
 	//! Refreshes all the axes which are automatic for the screen.
 	void RefreshScreenAutoAxes();
+
+	// Add
 	bool cur_Enable;
 	// Generated message map functions
 protected:
 	//{{AFX_MSG(CChartCtrl)
-	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnPaint();
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnSize(UINT nType, int cx, int cy);

@@ -155,7 +155,6 @@ CChartCtrl::~CChartCtrl()
 
 BEGIN_MESSAGE_MAP(CChartCtrl, CWnd)
 	//{{AFX_MSG_MAP(CChartCtrl)
-	ON_WM_TIMER()
 	ON_WM_PAINT()
 	ON_WM_ERASEBKGND()
 	ON_WM_MOUSEMOVE()
@@ -174,22 +173,6 @@ END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
 // CChartCtrl message handlers
-
-void CChartCtrl::OnTimer(UINT_PTR nIDEvent)
-{
-	MessageBox("hello");
-	KillTimer(1);
-	CPaintDC dc(this);
-	CPen pen(PS_SOLID, 2, RGB(0, 0, 255));
-	CPen *pOldpen = dc.SelectObject(&pen);
-	CRect rect;
-	GetClientRect(&rect);
-	int height = rect.Height();
-	int wight = rect.Width();
-	CPoint p[3] = { CPoint(wight / 2,height - 10),CPoint(wight / 2 - 5, height),CPoint(wight / 2 + 5,height) };
-	dc.Polygon(p, 3);
-	ReleaseDC(&dc);
-}
 
 void CChartCtrl::OnPaint() 
 {
@@ -232,20 +215,13 @@ void CChartCtrl::OnPaint()
 		CPen *pOldpen1 = dc.SelectObject(&pen1);
 		CPoint top = m_PlottingRect.TopLeft();
 		CPoint bottom = m_PlottingRect.BottomRight();
-		top.x = (bottom.x + top.x) / 2;
-		bottom.x = top.x;
+		// In Middle
+		//top.x = (bottom.x + top.x) / 2;
+		//bottom.x = top.x;
+		// In Right
+		top.x = bottom.x;
 		dc.MoveTo(top);
 		dc.LineTo(bottom);
-		
-		//CPen pen1(PS_SOLID, 2, RGB(0, 255, 0));
-		//CPen *pOldpen1 = dc.SelectObject(&pen1);
-		//dc.MoveTo(rect.Width() / 2, 0);
-		//dc.LineTo(rect.Width() / 2, rect.Height());
-
-		int wight = m_PlottingRect.Width();
-		int height = m_PlottingRect.Height();
-		CPoint p[3] = { CPoint(wight / 2,height - 10),CPoint(wight / 2 - 5, height),CPoint(wight / 2 + 5,height) };
-		dc.Polygon(p, 3);
 
 		dc.SelectObject(pOldpen1);
 		DeleteObject(pen1);

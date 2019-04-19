@@ -85,3 +85,7 @@ _Application,_WorkSheet,_WorkSheets,_Workbook,_Workbooks,_Font,_Range;
 
 ## 绘制动态曲线
 Ref: https://blog.csdn.net/zang141588761/article/details/50536811
+
+CChartLineSerie : CChartXYSerie : CChartSerieBase (m_vPoint CChartPointsArray) : CChartSerie
+
+Slow;Normal;Overspeed;High Overspeed;

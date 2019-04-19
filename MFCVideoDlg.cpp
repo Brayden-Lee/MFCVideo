@@ -9,6 +9,7 @@
 #include "OpitionDialog.h"
 #include "ValueDisplayDlg.h"
 #include "AlertDisplayDlg.h"
+#include "ChooseAlertLevel.h"
 #include "constant.h"
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -93,6 +94,7 @@ BEGIN_MESSAGE_MAP(CMFCVideoDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_DISPALY_VALUE, &CMFCVideoDlg::OnBnClickedDispalyValue)
 	ON_BN_CLICKED(IDC_SET_ALERT, &CMFCVideoDlg::OnBnClickedSetAlert)
 	ON_BN_CLICKED(IDC_ALERT_DETAIL, &CMFCVideoDlg::OnBnClickedAlertDetail)
+	ON_STN_DBLCLK(IDC_VALUE, &CMFCVideoDlg::OnStnDblclickValue)
 END_MESSAGE_MAP()
 
 
@@ -215,10 +217,11 @@ void CMFCVideoDlg::init()
 	mTotalTime = 0;
 	m_resDir = "";
 	memset(m_saveDataPath, '\0', MAX_PATH * sizeof(char));
-	m_index_speed = 0;
+	m_index_speed = -30;
 	m_index_radar = 0;
 	m_Row = 0;
 	m_Col = 0;
+	setAlertEnable = false;
 	video_index_1 = 0;
 	video_index_2 = 0;
 	video_index_3 = 0;
@@ -385,24 +388,35 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 		}
 		double x[30], y[30];
 		int row = speed_X.size();
-		m_index_speed = m_index_speed % row;
+		if (m_index_speed + m_cur_index > row)
+			m_index_speed = -30;    // For test
 		for (int i = 0; i < 30; i++)
 		{
 			x[i] = i;
 			switch (type)
 			{
 			case SPEED_X:
-				y[i] = speed_X[(m_index_speed + i) % row];    // 每次显示30个数
+				if (m_index_speed + i < 0)
+					y[i] = 0;
+				else
+					y[i] = speed_X[(m_index_speed + i) % row];    // 每次显示30个数
 				break;
 			case SPEED_Y:
-				y[i] = speed_Y[(m_index_speed + i) % row];
+				if (m_index_speed + i < 0)
+					y[i] = 0;
+				else
+					y[i] = speed_Y[(m_index_speed + i) % row];
 				break;
 			default:
-				y[i] = speed_Z[(m_index_speed + i) % row];
+				if (m_index_speed + i < 0)
+					y[i] = 0;
+				else
+					y[i] = speed_Z[(m_index_speed + i) % row];
 				break;
 			}
+			
 		}
-		//m_ChartCtrl_Curve1.EnableRefresh(false);
+		m_ChartCtrl_Curve1.EnableRefresh(false);
 		CChartLineSerie *pLineSerie;
 		m_ChartCtrl_Curve1.RemoveAllSeries();//先清空  
 		pLineSerie = m_ChartCtrl_Curve1.CreateLineSerie();
@@ -412,8 +426,9 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 		CString text;
 		text.Format(_T("%lf"), y[m_cur_index]);
 		curve_value.SetWindowTextA(text);
-		//DrawOverSpeed(x, y, 30);
-		//m_ChartCtrl_Curve1.EnableRefresh(true);
+
+		//DrawOverSpeed();
+		m_ChartCtrl_Curve1.EnableRefresh(true);
 		break;
 	}
 	case TIMER_RADAR:
@@ -939,7 +954,7 @@ void CMFCVideoDlg::load_speed_data()
 		text = Excel_Guandao.GetText(i, 4);
 		speed_Z.push_back(atof(text));
 	}
-	m_index_speed = 0;
+	//m_index_speed = 0;
 }
 
 void CMFCVideoDlg::load_radar_data()
@@ -976,11 +991,12 @@ void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 	int row = speed_X.size();
 	if (firsttime)
 	{
-		for (int i = 0; i < 15; i++)
+		for (int i = 0; i < 30; i++)
 		{
 			x[i] = i;
 			y[i] = 0;
 		}
+		/*
 		for (int i = 15; i < 30; i++)
 		{
 			x[i] = i;
@@ -997,6 +1013,7 @@ void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 				break;
 			}
 		}
+		*/
 	}
 	else
 	{
@@ -1015,6 +1032,8 @@ void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 				y[i] = speed_Z[(m_index_speed + i) % row];
 				break;
 			}
+			if (m_index_speed + i < 0)
+				y[i] = 0;
 		}
 	}
 	
@@ -1025,46 +1044,46 @@ void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 	pLineSerie->SetSeriesOrdering(poNoOrdering);
 	pLineSerie->AddPoints(x, y, 30);
 	pLineSerie->SetWidth(3);
-	
-	m_cur_index = 15;
+	pLineSerie->SetColor(RGB(0, 0, 255));
+	m_cur_index = 29;    // current
 	GetDlgItem(IDC_VALUE)->ShowWindow(SW_SHOW);
 	CString text;
 	text.Format(_T("%lf"), y[m_cur_index]);
 	curve_value.SetWindowTextA(text);
 	m_ChartCtrl_Curve1.EnableRefresh(true);
 	m_ChartCtrl_Curve1.cur_Enable = true;
-	//DrawOverSpeed(x, y, 30);
 	SetTimer(TIMER_CURVE, 50, NULL);
 }
 
-void CMFCVideoDlg::DrawOverSpeed(double *x, double *y, int n)
+void CMFCVideoDlg::DrawOverSpeed()
 {
-	CWnd *pWnd = GetDlgItem(IDC_CURVE_1);
-	CDC *pDC = pWnd->GetDC();
-	CPen pen(PS_SOLID, 2, RGB(0, 255, 0));
-	CPen *pOldpen = pDC->SelectObject(&pen);
-
-	CRect rect;
-	GetDlgItem(IDC_CURVE_1)->GetClientRect(&rect);
-	int height = rect.Height();
-	int wight = rect.Width();
-
-	CChartLineSerie *pLineSerie;
-	pLineSerie = m_ChartCtrl_Curve1.CreateLineSerie();
-	pLineSerie->SetWidth(3);
-
-	CPoint p[3] = { CPoint(wight / 2,height - 5),CPoint(wight / 2 - 2, height),CPoint(wight / 2 + 2,height) };
-	for (int i = 0; i < n; i++)
+	vector<double> v1;
+	vector<double> v2;
+	map<int, int>::iterator iter;
+	for (iter = over_speed.begin(); iter != over_speed.end(); iter++)
 	{
-		if (i != m_cur_index)
-			continue;
-		//CPoint ScreenPoint;
-		//pLineSerie->ValueToScreen(x[i], y[i], ScreenPoint);
-		//pDC->MoveTo(ScreenPoint.x, height - 20);
-		//pDC->LineTo(ScreenPoint.x, height - 40);
-		pDC->Polygon(p, 3);
+		if (iter->first < m_index_speed + m_cur_index && iter->first >= m_index_speed)
+		{
+			v1.push_back(iter->first);
+			v2.push_back(iter->second);
+		}
 	}
-	pWnd->ReleaseDC(pDC);
+	double *x = NULL;
+	double *y = NULL;
+	x = new double[v1.size()];
+	y = new double[v2.size()];
+	for (int i = 0; i < v1.size(); i++)
+	{
+		x[i] = v1[i];
+	}
+	//m_ChartCtrl_Curve1.EnableRefresh(false);
+	CChartPointsSerie *pointSerie;
+	pointSerie = m_ChartCtrl_Curve1.CreatePointsSerie();
+	pointSerie->AddPoints(x, y, v1.size());
+	pointSerie->SetPointType(CChartPointsSerie::PointType(CChartPointsSerie::ptTriangle));
+	pointSerie->SetPointSize(10, 10);
+	pointSerie->SetColor(RGB(0, 255, 0));
+	//m_ChartCtrl_Curve1.EnableRefresh(true);
 }
 
 void CMFCVideoDlg::DrawCurrLabel()
@@ -1305,6 +1324,7 @@ void CMFCVideoDlg::OnBnClickedDispalyValue()
 void CMFCVideoDlg::OnBnClickedSetAlert()
 {
 	StopTimer();
+	setAlertEnable = true;
 	//StartTimer();
 }
 
@@ -1315,4 +1335,48 @@ void CMFCVideoDlg::OnBnClickedAlertDetail()
 	StopTimer();
 	alertDlg.DoModal();
 	StartTimer();
+}
+
+
+void CMFCVideoDlg::OnStnDblclickValue()
+{
+	if (setAlertEnable)
+	{
+		CChooseAlertLevel chooseAlertDlg;
+		
+		if (chooseAlertDlg.DoModal() == IDCANCEL)
+		{
+			setAlertEnable = false;
+			return;
+		}
+		int level = chooseAlertDlg.GetAlertLevel();
+		double x[1];
+		double y[1];
+		int index = 0;
+		index = m_cur_index + m_index_speed;
+		if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_X))->GetCheck()) {
+			x[0] = 15;
+			y[0] = speed_X[index % speed_X.size()];
+		}
+		else if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_Y))->GetCheck()) {
+			x[0] = m_cur_index;
+			y[0] = speed_Y[index % speed_X.size()];
+		}
+		else {
+			x[0] = m_cur_index;
+			y[0] = speed_Z[index % speed_X.size()];
+		}
+
+		m_ChartCtrl_Curve1.EnableRefresh(false);
+		CChartPointsSerie *pointSerie;
+		pointSerie = m_ChartCtrl_Curve1.CreatePointsSerie();
+		pointSerie->AddPoints(x, y, 1);
+		pointSerie->SetPointType(CChartPointsSerie::PointType(CChartPointsSerie::ptTriangle));
+		pointSerie->SetPointSize(10, 10);
+		pointSerie->SetColor(RGB(0, 255, 0));
+		m_ChartCtrl_Curve1.EnableRefresh(true);
+		setAlertEnable = false;
+		over_speed.insert(pair<int, int>(index, level));
+		//StartTimer();
+	}
 }

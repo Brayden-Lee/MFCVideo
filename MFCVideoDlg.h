@@ -5,11 +5,13 @@
 #include "ChartCtrl_source\ChartCtrl.h"
 #include "ChartCtrl_source\ChartTitle.h"
 #include "ChartCtrl_source\ChartLineSerie.h"
+#include "ChartCtrl_source\ChartPointsSerie.h"
 #include "Meter.h"
 #include "CvideoIf.h"
 #include "CvvImage.h"
 #include "constant.h"
 #include <vector>
+#include <map>
 #include <string>
 #include <sstream>
 
@@ -93,6 +95,7 @@ protected:
 	vector<double> speed_X;
 	vector<double> speed_Y;
 	vector<double> speed_Z;
+	map<int, int> over_speed;
 	vector<struct Pos> m_obstacle;
 	vector<struct Loc> m_locOnmap;
 	int m_index_speed;
@@ -102,6 +105,8 @@ protected:
 
 	int m_Row;
 	int m_Col;
+
+	bool setAlertEnable;
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
@@ -141,7 +146,7 @@ public:
 	afx_msg void load_speed_data();    // Guandao data
 	afx_msg void load_radar_data();    // Radar data
 	afx_msg void DrawSpeed(int type, bool firsttime);
-	afx_msg void DrawOverSpeed(double *x, double *y, int n);
+	afx_msg void DrawOverSpeed();
 	afx_msg void DrawCurrLabel();
 	afx_msg void DrawRadarData();
 	afx_msg void DrawMeter(double speed);
@@ -160,5 +165,6 @@ public:
 	afx_msg void StartTimer();
 	afx_msg void OnBnClickedSetAlert();
 	afx_msg void OnBnClickedAlertDetail();
+	afx_msg void OnStnDblclickValue();
 };
 #pragma once
