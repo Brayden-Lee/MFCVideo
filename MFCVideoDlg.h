@@ -95,10 +95,11 @@ protected:
 	vector<double> speed_X;
 	vector<double> speed_Y;
 	vector<double> speed_Z;
-	map<int, int> over_speed;
 	vector<struct Pos> m_obstacle;
 	vector<struct Loc> m_locOnmap;
+	COLORREF Alert_Color[COLOR_TYPE];
 	int m_index_speed;
+	int m_global_count;    // loop time of all
 	int m_cur_index;
 	int m_index_radar;
 	HICON m_hIcon;
@@ -115,6 +116,7 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
+	map<int, int> over_speed;
 	CListCtrl m_ListControl;
 	CEdit m_Edit;
 	CProgressCtrl *m_ProgressCtrl;
@@ -139,8 +141,11 @@ public:
 	afx_msg BOOL IsVideoFile(CString sName);
 	afx_msg void ChangeVideo(CString dirName, CString sName, CvideoIf* cvinfo);
 	afx_msg void OnBnClickedDeleteSource();
+	afx_msg BOOL IsFileExist(const CString& csFile);
 	afx_msg void saveData();
 	afx_msg void loadData();
+	afx_msg void saveAlertTag();
+	afx_msg void loadAlertTag();
 	afx_msg void OnNMHoverNi(NMHDR *pNMHDR, LRESULT *pResult);
 
 	afx_msg void load_speed_data();    // Guandao data

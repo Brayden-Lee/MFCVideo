@@ -34,10 +34,10 @@ BOOL CChooseAlertLevel::OnInitDialog()
 {
 	m_AlertLevelList = (CComboBox*)GetDlgItem(IDC_ALERTLEVEL);
 	int index = 0;
-	m_AlertLevelList->InsertString(index++, "Slow");
-	m_AlertLevelList->InsertString(index++, "Normal");
-	m_AlertLevelList->InsertString(index++, "Overspeed");
-	m_AlertLevelList->InsertString(index++, "High Overspeed");
+	m_AlertLevelList->InsertString(index++, "Slow (yello tag)");
+	m_AlertLevelList->InsertString(index++, "Normal (green tag)");
+	m_AlertLevelList->InsertString(index++, "Overspeed (red tag)");
+	m_AlertLevelList->InsertString(index++, "High Overspeed (black tag)");
 	m_AlertLevelList->SetCurSel(0);
 	cur_index = 0;
 	return TRUE;

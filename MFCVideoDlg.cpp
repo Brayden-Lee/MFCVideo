@@ -177,6 +177,7 @@ BOOL CMFCVideoDlg::OnInitDialog()
 
 	// 导入初始数据
 	loadData();
+	loadAlertTag();
 
 	// 坐标轴初始化
 	CChartAxis *pAxis = NULL;
@@ -218,6 +219,7 @@ void CMFCVideoDlg::init()
 	m_resDir = "";
 	memset(m_saveDataPath, '\0', MAX_PATH * sizeof(char));
 	m_index_speed = -30;
+	m_global_count = 0;
 	m_index_radar = 0;
 	m_Row = 0;
 	m_Col = 0;
@@ -226,6 +228,10 @@ void CMFCVideoDlg::init()
 	video_index_2 = 0;
 	video_index_3 = 0;
 	video_index_4 = 0;
+	Alert_Color[0] = RGB(255, 255, 0);    // Yellow
+	Alert_Color[1] = RGB(0, 255, 0);    // Green
+	Alert_Color[2] = RGB(255, 0, 0);    // Red
+	Alert_Color[3] = RGB(0, 0, 0);    // Black
 }
 
 void CMFCVideoDlg::release_mem()
@@ -235,6 +241,7 @@ void CMFCVideoDlg::release_mem()
 	speed_Z.clear();
 	m_obstacle.clear();
 	m_locOnmap.clear();
+	over_speed.clear();
 	path_video1.clear();
 	path_video2.clear();
 	path_video3.clear();
@@ -375,7 +382,6 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 	}
 	case TIMER_CURVE:
 	{
-		m_index_speed++;
 		int type;
 		if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_X))->GetCheck()) {
 			type = SPEED_X;
@@ -388,11 +394,14 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 		}
 		double x[30], y[30];
 		int row = speed_X.size();
-		if (m_index_speed + m_cur_index > row)
-			m_index_speed = -30;    // For test
-		for (int i = 0; i < 30; i++)
+		if (m_global_count - MAX_PLOT_RANGE > row)
 		{
-			x[i] = i;
+			m_index_speed = -30;
+			m_global_count = 0;
+		}
+		for (int i = 0; i < MAX_PLOT_RANGE; i++)
+		{
+			x[i] = i + m_index_speed;
 			switch (type)
 			{
 			case SPEED_X:
@@ -414,7 +423,6 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 					y[i] = speed_Z[(m_index_speed + i) % row];
 				break;
 			}
-			
 		}
 		m_ChartCtrl_Curve1.EnableRefresh(false);
 		CChartLineSerie *pLineSerie;
@@ -423,12 +431,33 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 		pLineSerie->AddPoints(x, y, 30);
 		pLineSerie->SetWidth(3);
 		GetDlgItem(IDC_VALUE)->ShowWindow(SW_SHOW);
+		m_cur_index = m_index_speed + MAX_PLOT_RANGE;
 		CString text;
-		text.Format(_T("%lf"), y[m_cur_index]);
+		text.Format(_T("%lf"), y[MAX_PLOT_RANGE - 1]);
 		curve_value.SetWindowTextA(text);
 
-		//DrawOverSpeed();
+		DrawOverSpeed();
+
+		// CONST y
+		if (CONSTLABEL)
+		{
+			double x1[2];
+			double y1[2];
+			x1[0] = m_cur_index;
+			x1[1] = m_cur_index;
+			y1[0] = 2;
+			y1[1] = -1;
+			CChartLineSerie *lineScale;
+			lineScale = m_ChartCtrl_Curve1.CreateLineSerie();
+			lineScale->SetSeriesOrdering(poNoOrdering);
+			lineScale->AddPoints(x1, y1, 2);
+			lineScale->SetColor(RGB(0, 255, 255));
+			lineScale->SetWidth(3);
+		}
+
 		m_ChartCtrl_Curve1.EnableRefresh(true);
+		m_index_speed++;
+		m_global_count++;
 		break;
 	}
 	case TIMER_RADAR:
@@ -522,12 +551,10 @@ void CMFCVideoDlg::OnClose()   // 整个退出
 	}
 	Excel_Guandao.Close();
 	Excel_Radar.Close();
-	release_mem();
-	KillTimer(1);
-	KillTimer(2);
-	KillTimer(3);
-	KillTimer(4);
+	StopTimer();
 	saveData();
+	saveAlertTag();
+	release_mem();
 	CDialogEx::OnClose();
 }
 
@@ -896,13 +923,47 @@ void CMFCVideoDlg::saveData()
 	file.Close();
 }
 
-void CMFCVideoDlg::loadData()
+void CMFCVideoDlg::saveAlertTag()
 {
 	CString fileStr = "";
 	CString tmpStr;
 	tmpStr.Format("%s", m_saveDataPath);
 	CStdioFile file;
+	fileStr = tmpStr + "\\alerttag.txt";
+	file.Open(fileStr, CFile::modeCreate | CFile::modeWrite);
+	file.SeekToBegin();
+	map<int, int>::iterator iter;
+	for (iter = over_speed.begin(); iter != over_speed.end(); iter++)
+	{
+		tmpStr.Format("%d|%d\n", iter->first, iter->second);
+		/*
+		NOTE:
+		表示换行 Linux: \r\n, Windows: \n, Max OS: \r
+		*/
+		file.Seek(0, CFile::end);
+		file.WriteString(tmpStr);
+	}
+	file.Close();
+}
+
+// Static Tool Function
+BOOL CMFCVideoDlg::IsFileExist(const CString& csFile)
+{
+	//DWORD dwAttrib = GetFileAttributes(csFile);
+	//return INVALID_FILE_ATTRIBUTES != dwAttrib && 0 == (dwAttrib & FILE_ATTRIBUTE_DIRECTORY);
+	WIN32_FILE_ATTRIBUTE_DATA attrs = { 0 };
+	return 0 != GetFileAttributesEx(csFile, GetFileExInfoStandard, &attrs);
+}
+
+void CMFCVideoDlg::loadData()
+{
+	CString fileStr = "";
+	CString tmpStr;
+	tmpStr.Format("%s", m_saveDataPath);
 	fileStr = tmpStr + "\\itemfile.txt";
+	if (!IsFileExist(fileStr))
+		return;
+	CStdioFile file;
 	file.Open(fileStr, CFile::modeRead);
 
 	CString name;
@@ -922,6 +983,28 @@ void CMFCVideoDlg::loadData()
 		m_ListControl.SetItemText(m_Row, 2, driver);
 		m_ListControl.SetItemText(m_Row, 3, path);
 		//MessageBox(path + "\\data.txt");
+	}
+	file.Close();
+}
+
+void CMFCVideoDlg::loadAlertTag()
+{
+	CString fileStr = "";
+	CString tmpStr;
+	tmpStr.Format("%s", m_saveDataPath);
+	fileStr = tmpStr + "\\alerttag.txt";
+	if (!IsFileExist(fileStr))
+		return;
+	CStdioFile file;
+	file.Open(fileStr, CFile::modeRead);
+
+	CString time;
+	CString level;
+	while (file.ReadString(tmpStr))
+	{
+		AfxExtractSubString(time, tmpStr, 0, '|');
+		AfxExtractSubString(level, tmpStr, 1, '|');
+		over_speed.insert(pair<int, int>(_ttoi(time), _ttoi(level)));
 	}
 	file.Close();
 }
@@ -993,33 +1076,22 @@ void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 	{
 		for (int i = 0; i < 30; i++)
 		{
-			x[i] = i;
+			x[i] = (m_global_count - MAX_PLOT_RANGE);
 			y[i] = 0;
 		}
-		/*
-		for (int i = 15; i < 30; i++)
-		{
-			x[i] = i;
-			switch (type)
-			{
-			case SPEED_X:
-				y[i] = speed_X[(m_index_speed + i) % row];    // 每次显示30个数
-				break;
-			case SPEED_Y:
-				y[i] = speed_Y[(m_index_speed + i) % row];
-				break;
-			default:
-				y[i] = speed_Z[(m_index_speed + i) % row];
-				break;
-			}
-		}
-		*/
+		m_global_count = MAX_PLOT_RANGE;
 	}
 	else
 	{
-		for (int i = 0; i < 30; i++)
+		if (m_global_count - MAX_PLOT_RANGE > row)
 		{
-			x[i] = i;
+			m_index_speed = -30;
+			m_global_count = 0;
+		}
+		m_index_speed++;
+		for (int i = 0; i < MAX_PLOT_RANGE; i++)
+		{
+			x[i] = i + m_index_speed;
 			switch (type)
 			{
 			case SPEED_X:
@@ -1035,6 +1107,7 @@ void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 			if (m_index_speed + i < 0)
 				y[i] = 0;
 		}
+		m_global_count++;
 	}
 	
 	m_ChartCtrl_Curve1.EnableRefresh(false);
@@ -1045,11 +1118,29 @@ void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 	pLineSerie->AddPoints(x, y, 30);
 	pLineSerie->SetWidth(3);
 	pLineSerie->SetColor(RGB(0, 0, 255));
-	m_cur_index = 29;    // current
+	m_cur_index = m_index_speed + MAX_PLOT_RANGE;    // current
 	GetDlgItem(IDC_VALUE)->ShowWindow(SW_SHOW);
 	CString text;
-	text.Format(_T("%lf"), y[m_cur_index]);
+	text.Format(_T("%lf"), y[MAX_PLOT_RANGE - 1]);
 	curve_value.SetWindowTextA(text);
+
+	// CONST y
+	if (CONSTLABEL)
+	{
+		double x1[2];
+		double y1[2];
+		x1[0] = m_cur_index;
+		x1[1] = m_cur_index;
+		y1[0] = 2;
+		y1[1] = -1;
+		CChartLineSerie *lineScale;
+		lineScale = m_ChartCtrl_Curve1.CreateLineSerie();
+		lineScale->SetSeriesOrdering(poNoOrdering);
+		lineScale->AddPoints(x1, y1, 2);
+		lineScale->SetColor(RGB(0, 255, 255));
+		lineScale->SetWidth(3);
+	}
+	
 	m_ChartCtrl_Curve1.EnableRefresh(true);
 	m_ChartCtrl_Curve1.cur_Enable = true;
 	SetTimer(TIMER_CURVE, 50, NULL);
@@ -1057,33 +1148,47 @@ void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 
 void CMFCVideoDlg::DrawOverSpeed()
 {
-	vector<double> v1;
-	vector<double> v2;
+	vector<int> v1;
+	vector<int> v2;
 	map<int, int>::iterator iter;
 	for (iter = over_speed.begin(); iter != over_speed.end(); iter++)
 	{
-		if (iter->first < m_index_speed + m_cur_index && iter->first >= m_index_speed)
+		if (iter->first < m_cur_index && iter->first >= m_index_speed)
 		{
 			v1.push_back(iter->first);
 			v2.push_back(iter->second);
 		}
 	}
-	double *x = NULL;
-	double *y = NULL;
-	x = new double[v1.size()];
-	y = new double[v2.size()];
+	//double *x = NULL;
+	//double *y = NULL;
+	//x = new double[v1.size()];
+	//y = new double[v2.size()];
+	double x[1];
+	double y[1];
 	for (int i = 0; i < v1.size(); i++)
 	{
-		x[i] = v1[i];
+		x[0] = v1[i];
+		y[0] = 0;
+
+		//m_ChartCtrl_Curve1.EnableRefresh(false);
+		CChartPointsSerie *pointSerie;
+		pointSerie = m_ChartCtrl_Curve1.CreatePointsSerie();
+		pointSerie->AddPoints(x, y, 1);
+		pointSerie->SetPointType(CChartPointsSerie::PointType(CChartPointsSerie::ptTriangle));
+		pointSerie->SetPointSize(10, 10);
+		pointSerie->SetColor(Alert_Color[v2[i]]);
+		//m_ChartCtrl_Curve1.EnableRefresh(true);
 	}
-	//m_ChartCtrl_Curve1.EnableRefresh(false);
+	/*
+	m_ChartCtrl_Curve1.EnableRefresh(false);
 	CChartPointsSerie *pointSerie;
 	pointSerie = m_ChartCtrl_Curve1.CreatePointsSerie();
 	pointSerie->AddPoints(x, y, v1.size());
 	pointSerie->SetPointType(CChartPointsSerie::PointType(CChartPointsSerie::ptTriangle));
 	pointSerie->SetPointSize(10, 10);
 	pointSerie->SetColor(RGB(0, 255, 0));
-	//m_ChartCtrl_Curve1.EnableRefresh(true);
+	m_ChartCtrl_Curve1.EnableRefresh(true);
+	*/
 }
 
 void CMFCVideoDlg::DrawCurrLabel()
@@ -1325,7 +1430,6 @@ void CMFCVideoDlg::OnBnClickedSetAlert()
 {
 	StopTimer();
 	setAlertEnable = true;
-	//StartTimer();
 }
 
 
@@ -1333,6 +1437,7 @@ void CMFCVideoDlg::OnBnClickedAlertDetail()
 {
 	CAlertDisplayDlg alertDlg;
 	StopTimer();
+	
 	alertDlg.DoModal();
 	StartTimer();
 }
@@ -1352,19 +1457,17 @@ void CMFCVideoDlg::OnStnDblclickValue()
 		int level = chooseAlertDlg.GetAlertLevel();
 		double x[1];
 		double y[1];
-		int index = 0;
-		index = m_cur_index + m_index_speed;
 		if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_X))->GetCheck()) {
-			x[0] = 15;
-			y[0] = speed_X[index % speed_X.size()];
+			x[0] = m_cur_index;
+			y[0] = 0;
 		}
 		else if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_Y))->GetCheck()) {
 			x[0] = m_cur_index;
-			y[0] = speed_Y[index % speed_X.size()];
+			y[0] = 0;
 		}
 		else {
 			x[0] = m_cur_index;
-			y[0] = speed_Z[index % speed_X.size()];
+			y[0] = 0;
 		}
 
 		m_ChartCtrl_Curve1.EnableRefresh(false);
@@ -1373,10 +1476,10 @@ void CMFCVideoDlg::OnStnDblclickValue()
 		pointSerie->AddPoints(x, y, 1);
 		pointSerie->SetPointType(CChartPointsSerie::PointType(CChartPointsSerie::ptTriangle));
 		pointSerie->SetPointSize(10, 10);
-		pointSerie->SetColor(RGB(0, 255, 0));
+		pointSerie->SetColor(Alert_Color[level]);
 		m_ChartCtrl_Curve1.EnableRefresh(true);
 		setAlertEnable = false;
-		over_speed.insert(pair<int, int>(index, level));
-		//StartTimer();
+		over_speed.insert(pair<int, int>(m_cur_index, level));
+		StartTimer();
 	}
 }

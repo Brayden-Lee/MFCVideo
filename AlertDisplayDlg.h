@@ -1,6 +1,5 @@
 #pragma once
 
-
 // CAlertDisplayDlg ¶Ô»°¿ò
 
 class CAlertDisplayDlg : public CDialogEx

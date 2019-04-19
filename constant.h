@@ -18,6 +18,9 @@
 #define MAP_LAT 20
 #define MAP_LONG 20
 
+#define MAX_PLOT_RANGE 30
+#define COLOR_TYPE 4
+
 // Data
 #define SPEED_X 100
 #define SPEED_Y 101
@@ -30,3 +33,6 @@
 #define VIDEODIR_TWO "video2"
 #define VIDEODIR_THREE "video3"
 #define VIDEODIR_FOUR "video4"
+
+// Debug
+#define CONSTLABEL FALSE
