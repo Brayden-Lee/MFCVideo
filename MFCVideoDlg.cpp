@@ -95,6 +95,7 @@ BEGIN_MESSAGE_MAP(CMFCVideoDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_SET_ALERT, &CMFCVideoDlg::OnBnClickedSetAlert)
 	ON_BN_CLICKED(IDC_ALERT_DETAIL, &CMFCVideoDlg::OnBnClickedAlertDetail)
 	ON_STN_DBLCLK(IDC_VALUE, &CMFCVideoDlg::OnStnDblclickValue)
+	ON_WM_HSCROLL()
 END_MESSAGE_MAP()
 
 
@@ -143,7 +144,6 @@ BOOL CMFCVideoDlg::OnInitDialog()
 
 	GetDlgItem(IDC_VALUE)->ShowWindow(SW_HIDE);
 
-	m_ProgressCtrl = (CProgressCtrl *)GetDlgItem(IDC_PROGRESS_ALL_VIDEO);
 	GetCurrentDirectory(MAX_PATH, m_saveDataPath);
 	strcat_s(m_saveDataPath, "\\data");
 	//MessageBox(m_saveDataPath);
@@ -207,6 +207,12 @@ BOOL CMFCVideoDlg::OnInitDialog()
 	m_Meter_Panel.SetColorTick(TRUE);
 	m_Meter_Panel.UpdateNeedle(0.0);
 
+	// 滑动条
+	m_Slider_All = (CSliderCtrl *)GetDlgItem(IDC_SLIDERALL);
+	slider_count = 0;
+	m_Slider_All->SetRange(1, 1000, TRUE);
+	m_Slider_All->SetPos(slider_count);
+	slider_count++;
 	ShowWindow(SW_MAXIMIZE);    //窗口最大化弹出
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -373,13 +379,9 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 		}
 		break;
 	case TIMER_PROGRESS:
-	{
-		static int pos = 0;
-		pos = pos + 50;
-		if (pos > mTotalTime) pos = mTotalTime;
-		m_ProgressCtrl->SetPos(pos);
+		m_Slider_All->SetPos(slider_count);
+		slider_count++;
 		break;
-	}
 	case TIMER_CURVE:
 	{
 		int type;
@@ -430,6 +432,7 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 		pLineSerie = m_ChartCtrl_Curve1.CreateLineSerie();
 		pLineSerie->AddPoints(x, y, 30);
 		pLineSerie->SetWidth(3);
+		pLineSerie->SetColor(RGB(0, 0, 255));
 		GetDlgItem(IDC_VALUE)->ShowWindow(SW_SHOW);
 		m_cur_index = m_index_speed + MAX_PLOT_RANGE;
 		CString text;
@@ -500,7 +503,6 @@ void CMFCVideoDlg::StartTimer()
 	SetTimer(TIMER_VIDEO_2, eslapse, NULL);
 	SetTimer(TIMER_VIDEO_3, eslapse, NULL);
 	SetTimer(TIMER_VIDEO_4, eslapse, NULL);
-
 	SetTimer(TIMER_PROGRESS, 200, NULL);
 	SetTimer(TIMER_CURVE, 50, NULL);
 	SetTimer(TIMER_RADAR, 100, NULL);
@@ -694,8 +696,8 @@ void CMFCVideoDlg::OnBnClickedVideoStop()     //button 暂停
 		KillTimer(TIMER_VIDEO_2);
 		KillTimer(TIMER_VIDEO_3);
 		KillTimer(TIMER_VIDEO_4);
-		KillTimer(TIMER_PROGRESS);
 		KillTimer(TIMER_CURVE);
+		KillTimer(TIMER_PROGRESS);
 		KillTimer(TIMER_RADAR);
 	}
 	else {
@@ -734,11 +736,7 @@ void CMFCVideoDlg::OnBnClickedVideoStop()     //button 暂停
 		// 绘制雷达数据
 		DrawRadarPerpare();
 
-		// 设置进度条
-		int total = path_video1.size() + 1;
-		mTotalTime = total * 60 * 1000;    // 每个视频1min,变换为毫秒单位
-		m_ProgressCtrl->SetRange(0, mTotalTime);
-		m_ProgressCtrl->SetPos(0);
+		// 精度条
 		SetTimer(TIMER_PROGRESS, 200, NULL);
 		count = 1;
 	}
@@ -1418,9 +1416,9 @@ void CMFCVideoDlg::OnBnClickedDispalyValue()
 {
 	CValueDisplayDlg valuedisplayDlg;
 	StopTimer();
-	valuedisplayDlg.speed_x.Format("%lf", speed_X[m_index_speed]);
-	valuedisplayDlg.speed_y.Format("%lf", speed_Y[m_index_speed]);
-	valuedisplayDlg.speed_z.Format("%lf", speed_Z[m_index_speed]);
+	valuedisplayDlg.speed_x.Format("%lf", speed_X[m_cur_index - 1]);
+	valuedisplayDlg.speed_y.Format("%lf", speed_Y[m_cur_index - 1]);
+	valuedisplayDlg.speed_z.Format("%lf", speed_Z[m_cur_index - 1]);
 	valuedisplayDlg.DoModal();
 	StartTimer();
 }
@@ -1482,4 +1480,59 @@ void CMFCVideoDlg::OnStnDblclickValue()
 		over_speed.insert(pair<int, int>(m_cur_index, level));
 		StartTimer();
 	}
+}
+
+void CMFCVideoDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+{
+	//int pos;
+	//pos = m_Slider_All->GetPos();
+	//m_Slider_All->SetPos(pos);
+	StopTimer();
+	switch (nSBCode)
+	{
+	// mean: https://www.cnblogs.com/HPAHPA/p/7885759.html
+	case SB_THUMBTRACK:    // 拖动 
+		slider_count = nPos;
+		m_global_count = m_global_count + 20;
+		m_index_speed = m_index_speed + 20;
+		break;
+	case SB_LEFT:
+		slider_count = 0; //https://bbs.csdn.net/topics/390670320
+		m_global_count = 30;
+		m_index_speed = -30;
+		break;
+	case SB_RIGHT:
+		slider_count = 1000;
+		break;
+	case SB_PAGELEFT:
+		slider_count = slider_count - 5;
+		m_global_count = m_global_count - 10;
+		m_index_speed = m_index_speed - 10;
+		break;
+	case SB_PAGERIGHT:
+		slider_count = slider_count + 5;
+		m_global_count = m_global_count + 10;
+		m_index_speed = m_index_speed + 10;
+		break;
+	case SB_LINELEFT:
+		slider_count = slider_count - 1;
+		m_global_count = m_global_count - 1;
+		m_index_speed = m_index_speed - 1;
+		break;
+	case SB_LINERIGHT:
+		slider_count = slider_count + 1;
+		m_global_count = m_global_count + 1;
+		m_index_speed = m_index_speed + 1;
+		break;
+	default:
+		break;
+	}
+	if (m_global_count < 0)
+	{
+		m_global_count = 0;
+		m_index_speed = -30;
+	}
+	m_Slider_All->SetPos(slider_count);
+	CDialogEx::OnHScroll(nSBCode, nPos, pScrollBar);
+	StartTimer();
 }

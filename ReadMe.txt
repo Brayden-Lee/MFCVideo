@@ -88,4 +88,7 @@ Ref: https://blog.csdn.net/zang141588761/article/details/50536811
 
 CChartLineSerie : CChartXYSerie : CChartSerieBase (m_vPoint CChartPointsArray) : CChartSerie
 
-Slow;Normal;Overspeed;High Overspeed;
+Level: Slow;Normal;Overspeed;High Overspeed;
+
+颜色对照：https://wenku.baidu.com/view/64de2057f01dc281e53af00b.html
+SliderCtrl: https://wenku.baidu.com/view/bc9eabc6b9d528ea80c77912.html

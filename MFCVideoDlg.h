@@ -90,7 +90,7 @@ public:
 
 	CChartCtrl m_ChartCtrl_Curve1;
 	// 实现
-protected:
+
 	char m_saveDataPath[MAX_PATH];
 	vector<double> speed_X;
 	vector<double> speed_Y;
@@ -108,7 +108,7 @@ protected:
 	int m_Col;
 
 	bool setAlertEnable;
-
+protected:
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
@@ -118,8 +118,9 @@ protected:
 public:
 	map<int, int> over_speed;
 	CListCtrl m_ListControl;
+	CSliderCtrl *m_Slider_All;
+	UINT slider_count;
 	CEdit m_Edit;
-	CProgressCtrl *m_ProgressCtrl;
 	CStatic m_Obstacle_Panel;
 	CMeter	m_Meter_Panel;
 	CStatic m_Map;
@@ -171,5 +172,6 @@ public:
 	afx_msg void OnBnClickedSetAlert();
 	afx_msg void OnBnClickedAlertDetail();
 	afx_msg void OnStnDblclickValue();
+	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 };
 #pragma once
