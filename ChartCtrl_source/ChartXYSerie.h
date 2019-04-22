@@ -83,6 +83,10 @@ public:
 			Size of each of both arrays (number of points to add)
 	**/
 	void AddPoints(double* pX, double* pY, unsigned Count);
+	/**
+	ÃÌº”‘§æØ±Í÷æ
+	**/
+	void AddAlertPoints(double* pX, double* pY, unsigned Count);
 	//! Sets an array of points to the series.
 	/**
 		Points which were already present in the series are discarded.

@@ -65,6 +65,8 @@ public:
 			Size of the array
 	**/
 	void AddPoints(T* pPoints, unsigned Count);
+
+	void AddAlertPoints(T* pPoints, unsigned Count);
 	//! Retrieves the point at the specified index.
 	/**
 		@param index

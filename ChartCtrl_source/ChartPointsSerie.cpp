@@ -170,6 +170,11 @@ void CChartPointsSerie::Draw(CDC *pDC)
 	DeleteObject(ShadowPen);
 }
 
+void CChartPointsSerie::DrawAlert(CDC *pDC)
+{
+	MessageBox(NULL, "Œ¥ µœ÷", "hello", MB_OK);
+}
+
 void CChartPointsSerie::DrawAll(CDC *pDC)
 {
 	if (!m_bIsVisible)

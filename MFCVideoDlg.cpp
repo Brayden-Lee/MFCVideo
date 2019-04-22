@@ -45,6 +45,7 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 }
 
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
+	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
 
@@ -94,9 +95,41 @@ BEGIN_MESSAGE_MAP(CMFCVideoDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_DISPALY_VALUE, &CMFCVideoDlg::OnBnClickedDispalyValue)
 	ON_BN_CLICKED(IDC_SET_ALERT, &CMFCVideoDlg::OnBnClickedSetAlert)
 	ON_BN_CLICKED(IDC_ALERT_DETAIL, &CMFCVideoDlg::OnBnClickedAlertDetail)
-	ON_STN_DBLCLK(IDC_VALUE, &CMFCVideoDlg::OnStnDblclickValue)
 	ON_WM_HSCROLL()
+	ON_WM_SIZE()
+	ON_WM_CTLCOLOR()
+	ON_WM_SIZING()
 END_MESSAGE_MAP()
+
+BEGIN_EASYSIZE_MAP(CMFCVideoDlg)
+	EASYSIZE(IDC_PicCtl1, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE,0)
+	EASYSIZE(IDC_STATIC, ES_KEEPSIZE,ES_BORDER,ES_BORDER,ES_KEEPSIZE,0)
+	EASYSIZE(IDC_PicCtl2, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_PicCtl3, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_PicCtl4, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_ROAD_MAP, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_OBSTACLE_PANEL, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_METER_PANEL, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_VALUE, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_CURVE_1, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_RADIO_SPEED_X, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_RADIO_SPEED_Y, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_RADIO_SPEED_Z, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_Ni, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_BtnInsert, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_DELETE_SOURCE, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_SLIDERALL, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_VIDEO_PLAY, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_VIDEO_STOP, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_VIDEO_CLOSE, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_RADIO1, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_RADIO2, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_RADIO3, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_RADIO4, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_DISPALY_VALUE, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_SET_ALERT, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+	EASYSIZE(IDC_ALERT_DETAIL, ES_KEEPSIZE, ES_BORDER, ES_BORDER, ES_KEEPSIZE, 0)
+END_EASYSIZE_MAP
 
 
 // CMFCVideoDlg 消息处理程序
@@ -132,6 +165,8 @@ BOOL CMFCVideoDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+	GetClientRect(&m_rect);
+	limit_rect = m_rect;
 	init();
 	((CButton *)GetDlgItem(IDC_RADIO1))->SetCheck(TRUE);    // Radio 1默认选上
 	((CButton *)GetDlgItem(IDC_RADIO2))->SetCheck(FALSE);
@@ -213,7 +248,10 @@ BOOL CMFCVideoDlg::OnInitDialog()
 	m_Slider_All->SetRange(1, 1000, TRUE);
 	m_Slider_All->SetPos(slider_count);
 	slider_count++;
-	ShowWindow(SW_MAXIMIZE);    //窗口最大化弹出
+	//ShowWindow(SW_MAXIMIZE);    //窗口最大化弹出
+	//SetWindowLong(this->m_hWnd, GWL_STYLE, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU);
+	INIT_EASYSIZE;
+	m_WinsizeManage.Init(this->m_hWnd);
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -224,12 +262,11 @@ void CMFCVideoDlg::init()
 	mTotalTime = 0;
 	m_resDir = "";
 	memset(m_saveDataPath, '\0', MAX_PATH * sizeof(char));
-	m_index_speed = -30;
+	m_index_speed = -15;
 	m_global_count = 0;
 	m_index_radar = 0;
 	m_Row = 0;
 	m_Col = 0;
-	setAlertEnable = false;
 	video_index_1 = 0;
 	video_index_2 = 0;
 	video_index_3 = 0;
@@ -293,6 +330,28 @@ void CMFCVideoDlg::OnPaint()
 	}
 	else
 	{
+		CPaintDC dc(this);
+		CRect rect;
+		GetClientRect(&rect);
+		dc.FillSolidRect(rect, RGB(211, 211, 211));
+		
+		/*
+		CPaintDC   dc(this);
+		CRect   rect;
+		GetClientRect(&rect);    //获取对话框长宽      
+		CDC   dcBmp;             //定义并创建一个内存设备环境
+		dcBmp.CreateCompatibleDC(&dc);             //创建兼容性DC
+		CBitmap   bmpBackground;
+		bmpBackground.LoadBitmap(IDB_BITMAP_MAIN_BG);    //载入资源中图片
+		BITMAP   m_bitmap;                         //图片变量               
+		bmpBackground.GetBitmap(&m_bitmap);       //将图片载入位图中
+												  //将位图选入临时内存设备环境
+		CBitmap  *pbmpOld = dcBmp.SelectObject(&bmpBackground);
+		//调用函数显示图片StretchBlt显示形状可变
+		dc.StretchBlt(0, 0, rect.Width(), rect.Height(), &dcBmp, 0, 0, m_bitmap.bmWidth, m_bitmap.bmHeight, SRCCOPY);
+		Invalidate();
+		UpdateWindow();
+		*/
 		CDialogEx::OnPaint();
 	}
 }
@@ -396,10 +455,14 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 		}
 		double x[30], y[30];
 		int row = speed_X.size();
-		if (m_global_count - MAX_PLOT_RANGE > row)
+		m_index_speed++;
+		if (m_global_count > row)
 		{
-			m_index_speed = -30;
+			m_index_speed = -15;
 			m_global_count = 0;
+			KillTimer(TIMER_CURVE);
+			DrawSpeed(type, true);
+			break;
 		}
 		for (int i = 0; i < MAX_PLOT_RANGE; i++)
 		{
@@ -434,9 +497,9 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 		pLineSerie->SetWidth(3);
 		pLineSerie->SetColor(RGB(0, 0, 255));
 		GetDlgItem(IDC_VALUE)->ShowWindow(SW_SHOW);
-		m_cur_index = m_index_speed + MAX_PLOT_RANGE;
+		m_cur_index = m_index_speed + MAX_PLOT_RANGE / 2 - 1;
 		CString text;
-		text.Format(_T("%lf"), y[MAX_PLOT_RANGE - 1]);
+		text.Format(_T("%lf"), y[MAX_PLOT_RANGE / 2 - 1]);
 		curve_value.SetWindowTextA(text);
 
 		DrawOverSpeed();
@@ -448,8 +511,8 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 			double y1[2];
 			x1[0] = m_cur_index;
 			x1[1] = m_cur_index;
-			y1[0] = 2;
-			y1[1] = -1;
+			y1[0] = 0.1;
+			y1[1] = -0.1;
 			CChartLineSerie *lineScale;
 			lineScale = m_ChartCtrl_Curve1.CreateLineSerie();
 			lineScale->SetSeriesOrdering(poNoOrdering);
@@ -459,7 +522,7 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 		}
 
 		m_ChartCtrl_Curve1.EnableRefresh(true);
-		m_index_speed++;
+		
 		m_global_count++;
 		break;
 	}
@@ -1072,18 +1135,34 @@ void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 	int row = speed_X.size();
 	if (firsttime)
 	{
-		for (int i = 0; i < 30; i++)
+		m_global_count = -(MAX_PLOT_RANGE / 2);
+		for (int i = 0; i < (MAX_PLOT_RANGE / 2); i++)
 		{
-			x[i] = (m_global_count - MAX_PLOT_RANGE);
+			x[i] = m_global_count + i;
 			y[i] = 0;
 		}
-		m_global_count = MAX_PLOT_RANGE;
+		for (int i = (MAX_PLOT_RANGE / 2); i < MAX_PLOT_RANGE; i++)
+		{
+			x[i] = m_global_count + i;
+			switch (type)
+			{
+			case SPEED_X:
+				y[i] = speed_X[(m_index_speed + i) % row];    // 每次显示30个数
+				break;
+			case SPEED_Y:
+				y[i] = speed_Y[(m_index_speed + i) % row];
+				break;
+			default:
+				y[i] = speed_Z[(m_index_speed + i) % row];
+				break;
+			}
+		}
 	}
 	else
 	{
 		if (m_global_count - MAX_PLOT_RANGE > row)
 		{
-			m_index_speed = -30;
+			m_index_speed = -15;
 			m_global_count = 0;
 		}
 		m_index_speed++;
@@ -1116,10 +1195,10 @@ void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 	pLineSerie->AddPoints(x, y, 30);
 	pLineSerie->SetWidth(3);
 	pLineSerie->SetColor(RGB(0, 0, 255));
-	m_cur_index = m_index_speed + MAX_PLOT_RANGE;    // current
+	m_cur_index = m_index_speed + MAX_PLOT_RANGE / 2;    // current
 	GetDlgItem(IDC_VALUE)->ShowWindow(SW_SHOW);
 	CString text;
-	text.Format(_T("%lf"), y[MAX_PLOT_RANGE - 1]);
+	text.Format(_T("%lf"), y[MAX_PLOT_RANGE / 2 - 1]);
 	curve_value.SetWindowTextA(text);
 
 	// CONST y
@@ -1129,8 +1208,8 @@ void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 		double y1[2];
 		x1[0] = m_cur_index;
 		x1[1] = m_cur_index;
-		y1[0] = 2;
-		y1[1] = -1;
+		y1[0] = 0.1;
+		y1[1] = -0.1;
 		CChartLineSerie *lineScale;
 		lineScale = m_ChartCtrl_Curve1.CreateLineSerie();
 		lineScale->SetSeriesOrdering(poNoOrdering);
@@ -1140,7 +1219,6 @@ void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 	}
 	
 	m_ChartCtrl_Curve1.EnableRefresh(true);
-	m_ChartCtrl_Curve1.cur_Enable = true;
 	SetTimer(TIMER_CURVE, 50, NULL);
 }
 
@@ -1151,7 +1229,7 @@ void CMFCVideoDlg::DrawOverSpeed()
 	map<int, int>::iterator iter;
 	for (iter = over_speed.begin(); iter != over_speed.end(); iter++)
 	{
-		if (iter->first < m_cur_index && iter->first >= m_index_speed)
+		if (iter->first < m_cur_index + (MAX_PLOT_RANGE / 2) && iter->first >= m_index_speed)
 		{
 			v1.push_back(iter->first);
 			v2.push_back(iter->second);
@@ -1166,7 +1244,7 @@ void CMFCVideoDlg::DrawOverSpeed()
 	for (int i = 0; i < v1.size(); i++)
 	{
 		x[0] = v1[i];
-		y[0] = 0;
+		y[0] = -0.1;
 
 		//m_ChartCtrl_Curve1.EnableRefresh(false);
 		CChartPointsSerie *pointSerie;
@@ -1187,34 +1265,6 @@ void CMFCVideoDlg::DrawOverSpeed()
 	pointSerie->SetColor(RGB(0, 255, 0));
 	m_ChartCtrl_Curve1.EnableRefresh(true);
 	*/
-}
-
-void CMFCVideoDlg::DrawCurrLabel()
-{
-	CWnd *pWnd = GetDlgItem(IDC_CURVE_1);
-	CDC *pDC = pWnd->GetDC();
-	CPen pen(PS_SOLID, 2, RGB(0, 255, 0));
-	CPen *pOldpen = pDC->SelectObject(&pen);
-
-	CRect rect;
-	GetDlgItem(IDC_CURVE_1)->GetClientRect(&rect);
-	int height = rect.Height();
-	int weight = rect.Width();
-
-	CString text;
-	text.Format(_T("%d"), height);
-	//MessageBox(text);
-	CChartLineSerie *pLineSerie;
-	pLineSerie = m_ChartCtrl_Curve1.CreateLineSerie();
-	pLineSerie->SetWidth(3);
-
-	CPoint ScreenPoint;
-	pLineSerie->ValueToScreen(m_cur_index, 0.0, ScreenPoint);
-	pDC->MoveTo(ScreenPoint.x, 0);
-	pDC->LineTo(ScreenPoint.x, height);
-	text.Format(_T("%lf"), ScreenPoint.x);
-	//MessageBox(text);
-	pWnd->ReleaseDC(pDC);
 }
 
 void CMFCVideoDlg::DrawRadarData()
@@ -1416,9 +1466,9 @@ void CMFCVideoDlg::OnBnClickedDispalyValue()
 {
 	CValueDisplayDlg valuedisplayDlg;
 	StopTimer();
-	valuedisplayDlg.speed_x.Format("%lf", speed_X[m_cur_index - 1]);
-	valuedisplayDlg.speed_y.Format("%lf", speed_Y[m_cur_index - 1]);
-	valuedisplayDlg.speed_z.Format("%lf", speed_Z[m_cur_index - 1]);
+	valuedisplayDlg.speed_x.Format("%lf", speed_X[m_cur_index]);
+	valuedisplayDlg.speed_y.Format("%lf", speed_Y[m_cur_index]);
+	valuedisplayDlg.speed_z.Format("%lf", speed_Z[m_cur_index]);
 	valuedisplayDlg.DoModal();
 	StartTimer();
 }
@@ -1427,7 +1477,29 @@ void CMFCVideoDlg::OnBnClickedDispalyValue()
 void CMFCVideoDlg::OnBnClickedSetAlert()
 {
 	StopTimer();
-	setAlertEnable = true;
+	CChooseAlertLevel chooseAlertDlg;
+
+	if (chooseAlertDlg.DoModal() == IDCANCEL)
+	{
+		StartTimer();
+		return;
+	}
+	int level = chooseAlertDlg.GetAlertLevel();
+	double x[1];
+	double y[1];
+	x[0] = m_cur_index;
+	y[0] = -0.1;
+
+	m_ChartCtrl_Curve1.EnableRefresh(false);
+	CChartPointsSerie *pointSerie;
+	pointSerie = m_ChartCtrl_Curve1.CreatePointsSerie();
+	pointSerie->AddPoints(x, y, 1);
+	pointSerie->SetPointType(CChartPointsSerie::PointType(CChartPointsSerie::ptTriangle));
+	pointSerie->SetPointSize(10, 10);
+	pointSerie->SetColor(Alert_Color[level]);
+	m_ChartCtrl_Curve1.EnableRefresh(true);
+	over_speed.insert(pair<int, int>(m_cur_index, level));
+	StartTimer();
 }
 
 
@@ -1438,48 +1510,6 @@ void CMFCVideoDlg::OnBnClickedAlertDetail()
 	
 	alertDlg.DoModal();
 	StartTimer();
-}
-
-
-void CMFCVideoDlg::OnStnDblclickValue()
-{
-	if (setAlertEnable)
-	{
-		CChooseAlertLevel chooseAlertDlg;
-		
-		if (chooseAlertDlg.DoModal() == IDCANCEL)
-		{
-			setAlertEnable = false;
-			return;
-		}
-		int level = chooseAlertDlg.GetAlertLevel();
-		double x[1];
-		double y[1];
-		if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_X))->GetCheck()) {
-			x[0] = m_cur_index;
-			y[0] = 0;
-		}
-		else if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_Y))->GetCheck()) {
-			x[0] = m_cur_index;
-			y[0] = 0;
-		}
-		else {
-			x[0] = m_cur_index;
-			y[0] = 0;
-		}
-
-		m_ChartCtrl_Curve1.EnableRefresh(false);
-		CChartPointsSerie *pointSerie;
-		pointSerie = m_ChartCtrl_Curve1.CreatePointsSerie();
-		pointSerie->AddPoints(x, y, 1);
-		pointSerie->SetPointType(CChartPointsSerie::PointType(CChartPointsSerie::ptTriangle));
-		pointSerie->SetPointSize(10, 10);
-		pointSerie->SetColor(Alert_Color[level]);
-		m_ChartCtrl_Curve1.EnableRefresh(true);
-		setAlertEnable = false;
-		over_speed.insert(pair<int, int>(m_cur_index, level));
-		StartTimer();
-	}
 }
 
 void CMFCVideoDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
@@ -1498,8 +1528,8 @@ void CMFCVideoDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 		break;
 	case SB_LEFT:
 		slider_count = 0; //https://bbs.csdn.net/topics/390670320
-		m_global_count = 30;
-		m_index_speed = -30;
+		m_global_count = 0;
+		m_index_speed = -15;
 		break;
 	case SB_RIGHT:
 		slider_count = 1000;
@@ -1530,9 +1560,81 @@ void CMFCVideoDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 	if (m_global_count < 0)
 	{
 		m_global_count = 0;
-		m_index_speed = -30;
+		m_index_speed = -15;
 	}
 	m_Slider_All->SetPos(slider_count);
 	CDialogEx::OnHScroll(nSBCode, nPos, pScrollBar);
 	StartTimer();
+}
+
+
+
+void CMFCVideoDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CDialogEx::OnSize(nType, cx, cy);
+	
+	if (TRUE)
+	{
+		m_WinsizeManage.ResizeWindow();
+		Invalidate();
+		UpdateWindow();
+		return;
+	}
+
+	CWnd* pChildWnd = this->GetWindow(GW_CHILD);
+	while (pChildWnd != NULL)
+	{
+		ChangeSize(pChildWnd, cx, cy);
+		pChildWnd = pChildWnd->GetWindow(GW_HWNDNEXT);
+	}
+	GetClientRect(&m_rect);
+	Invalidate();    // 消除重影
+	UpdateWindow();
+
+	//UPDATE_EASYSIZE;
+}
+
+
+void CMFCVideoDlg::ChangeSize(CWnd* pWnd, int cx, int cy)
+{
+	if (pWnd)
+	{
+		CRect rect;
+		pWnd->GetWindowRect(&rect);
+		ScreenToClient(&rect);
+		rect.left = (double)rect.left * cx / m_rect.Width();
+		rect.right = (double)rect.right * cx / m_rect.Width();
+		rect.top = rect.top * cy / m_rect.Height();
+		rect.bottom = rect.bottom * cy / m_rect.Height();
+		pWnd->MoveWindow(rect);
+	}
+}
+
+
+HBRUSH CMFCVideoDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+	HBRUSH hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
+
+	if (pWnd->GetDlgCtrlID() == IDC_STATIC)
+	{
+		pDC->SetTextColor(RGB(0, 0, 0));
+		pDC->SetBkMode(TRANSPARENT);
+		return (HBRUSH)GetStockObject(NULL_BRUSH);
+	}
+	if (pWnd->GetDlgCtrlID() == IDC_VALUE)
+	{
+		pDC->SetTextColor(RGB(0, 0, 0));
+		pDC->SetBkColor(RGB(211, 211, 211));
+		return (HBRUSH)GetStockObject(NULL_BRUSH);
+	}
+	return hbr;
+}
+
+
+void CMFCVideoDlg::OnSizing(UINT fwSide, LPRECT pRect)
+{
+	CDialogEx::OnSizing(fwSide, pRect);
+
+	// TODO: 在此处添加消息处理程序代码
+	EASYSIZE_MINSIZE(limit_rect.Width(), limit_rect.Height(), fwSide, pRect);
 }

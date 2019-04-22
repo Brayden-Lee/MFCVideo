@@ -35,4 +35,4 @@
 #define VIDEODIR_FOUR "video4"
 
 // Debug
-#define CONSTLABEL FALSE
+#define CONSTLABEL TRUE

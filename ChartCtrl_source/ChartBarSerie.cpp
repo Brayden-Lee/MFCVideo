@@ -163,6 +163,11 @@ void CChartBarSerie::Draw(CDC* pDC)
 	DeleteObject(FillBrush);
 }
 
+void CChartBarSerie::DrawAlert(CDC *pDC)
+{
+	MessageBox(NULL, "Œ¥ µœ÷", "hello", MB_OK);
+}
+
 void CChartBarSerie::DrawAll(CDC *pDC)
 {
 	if (!m_bIsVisible)

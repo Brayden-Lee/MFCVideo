@@ -207,6 +207,7 @@ void CChartCtrl::OnPaint()
 		DeleteObject(NewPen);
 	}
 
+	/*
 	// 绘制当前指针
 	if (cur_Enable)
 	{
@@ -227,6 +228,7 @@ void CChartCtrl::OnPaint()
 		DeleteObject(pen1);
 		//SetTimer(1, 10, NULL);
 	}
+	*/
 
 	// Draw the cursors. 
 	TCursorMap::iterator iter = m_mapCursors.begin();

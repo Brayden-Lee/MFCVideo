@@ -125,6 +125,11 @@ void CChartGanttSerie::Draw(CDC* pDC)
 	DeleteObject(FillBrush);
 }
 
+void CChartGanttSerie::DrawAlert(CDC *pDC)
+{
+	MessageBox(NULL, "Œ¥ µœ÷", "hello", MB_OK);
+}
+
 void CChartGanttSerie::DrawAll(CDC *pDC)
 {
 	if (!m_bIsVisible)

@@ -10,6 +10,7 @@
 #include "CvideoIf.h"
 #include "CvvImage.h"
 #include "constant.h"
+#include "CWindowSizeManager.h"
 #include <vector>
 #include <map>
 #include <string>
@@ -41,6 +42,7 @@ struct Loc {
 // CMFCVideoDlg 对话框
 class CMFCVideoDlg : public CDialogEx
 {
+	DECLARE_EASYSIZE
 	// 构造
 public:
 	CMFCVideoDlg(CWnd* pParent = NULL);	// 标准构造函数
@@ -106,8 +108,6 @@ public:
 
 	int m_Row;
 	int m_Col;
-
-	bool setAlertEnable;
 protected:
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
@@ -116,6 +116,9 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
+	CWindowSizeMange m_WinsizeManage;
+	CRect m_rect;
+	CRect limit_rect;
 	map<int, int> over_speed;
 	CListCtrl m_ListControl;
 	CSliderCtrl *m_Slider_All;
@@ -153,7 +156,6 @@ public:
 	afx_msg void load_radar_data();    // Radar data
 	afx_msg void DrawSpeed(int type, bool firsttime);
 	afx_msg void DrawOverSpeed();
-	afx_msg void DrawCurrLabel();
 	afx_msg void DrawRadarData();
 	afx_msg void DrawMeter(double speed);
 	afx_msg void DrawMap();
@@ -171,7 +173,10 @@ public:
 	afx_msg void StartTimer();
 	afx_msg void OnBnClickedSetAlert();
 	afx_msg void OnBnClickedAlertDetail();
-	afx_msg void OnStnDblclickValue();
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void ChangeSize(CWnd* pWnd, int cx, int cy);
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
 };
 #pragma once

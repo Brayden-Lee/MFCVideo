@@ -119,6 +119,7 @@ protected:
 			The device context used to draw
 	**/
 	void Draw(CDC* pDC);
+	void DrawAlert(CDC* pDC);
 	//! Redraws the full series.
 	/**
 		@param pDC

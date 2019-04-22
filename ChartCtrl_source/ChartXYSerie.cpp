@@ -49,6 +49,18 @@ void CChartXYSerie::AddPoints(double* pX, double* pY, unsigned Count)
 	delete pPoints;
 }
 
+void CChartXYSerie::AddAlertPoints(double* pX, double* pY, unsigned Count)
+{
+	SChartXYPoint* pPoints = new SChartXYPoint[Count];
+	for (unsigned i = 0; i<Count; i++)
+	{
+		pPoints[i].X = pX[i];
+		pPoints[i].Y = pY[i];
+	}
+	CChartSerieBase<SChartXYPoint>::AddAlertPoints(pPoints, Count);
+	delete pPoints;
+}
+
 void CChartXYSerie::SetPoints(double* pX, double* pY, unsigned Count)
 {
 	SChartXYPoint* pPoints = new SChartXYPoint[Count];

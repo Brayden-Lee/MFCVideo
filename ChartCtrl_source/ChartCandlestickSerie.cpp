@@ -158,6 +158,11 @@ void CChartCandlestickSerie::Draw(CDC* pDC)
 	}
 }
 
+void CChartCandlestickSerie::DrawAlert(CDC *pDC)
+{
+	MessageBox(NULL, "Hello, Windows!", "hello", MB_OK);
+}
+
 void CChartCandlestickSerie::DrawAll(CDC *pDC)
 {
 	if (!m_bIsVisible)

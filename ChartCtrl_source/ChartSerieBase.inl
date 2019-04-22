@@ -72,9 +72,19 @@ void CChartSerieBase<T>::AddPoints(T* pPoints, unsigned Count)
 {
 	m_vPoints.AddPoints(pPoints, Count);
 	RefreshAutoAxes(false);
-
+	
 	CDC* pDC = m_pParentCtrl->GetDC();
 	Draw(pDC);
+	m_pParentCtrl->Invalidate();
+}
+
+template<class T>
+void CChartSerieBase<T>::AddAlertPoints(T* pPoints, unsigned Count)
+{
+	m_vPoints.AddPoints(pPoints, Count);
+	RefreshAutoAxes(false);
+	CDC* pDC = m_pParentCtrl->GetDC();
+	DrawAlert(pDC);
 	m_pParentCtrl->Invalidate();
 }
 

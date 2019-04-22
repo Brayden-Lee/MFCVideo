@@ -210,6 +210,7 @@ protected:
 			The device context used to draw
 	**/
 	virtual void Draw(CDC* pDC) =0;
+	virtual void DrawAlert(CDC* pDC) =0;
 	//! Redraws the full series.
 	/**
 		This pure virtual function should be overriden by child classes.
