@@ -66,9 +66,24 @@ void CMFCVideoDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EditItem, m_Edit);
 	DDX_Control(pDX, IDC_CURVE_1, m_ChartCtrl_Curve1);
 	DDX_Control(pDX, IDC_OBSTACLE_PANEL, m_Obstacle_Panel);
+	DDX_Control(pDX, IDC_PicCtl1, m_PicCtrl_Video1);
+	DDX_Control(pDX, IDC_PicCtl2, m_PicCtrl_Video2);
+	DDX_Control(pDX, IDC_PicCtl3, m_PicCtrl_Video3);
+	DDX_Control(pDX, IDC_PicCtl4, m_PicCtrl_Video4);
 	DDX_Control(pDX, IDC_METER_PANEL, m_Meter_Panel);
 	DDX_Control(pDX, IDC_ROAD_MAP, m_Map);
 	DDX_Control(pDX, IDC_VALUE, curve_value);
+	DDX_Control(pDX, IDC_VIDEO_NUM, test_video_num);
+	DDX_Control(pDX, IDC_VIDEO_FRAMES, test_video_frames);
+	// Button
+	DDX_Control(pDX, IDC_BtnInsert, m_BtnInsert);
+	DDX_Control(pDX, IDC_DELETE_SOURCE, m_BtnDelete);
+	DDX_Control(pDX, IDC_VIDEO_PLAY, m_BtnLoaddata);
+	DDX_Control(pDX, IDC_VIDEO_STOP, m_BtnBegin);
+	DDX_Control(pDX, IDC_VIDEO_CLOSE, m_BtnEnd);
+	DDX_Control(pDX, IDC_DISPALY_VALUE, m_BtnShowCur);
+	DDX_Control(pDX, IDC_SET_ALERT, m_BtnSetAlert);
+	DDX_Control(pDX, IDC_ALERT_DETAIL, m_BtnAlertInfo);
 }
 
 BEGIN_MESSAGE_MAP(CMFCVideoDlg, CDialogEx)
@@ -99,6 +114,7 @@ BEGIN_MESSAGE_MAP(CMFCVideoDlg, CDialogEx)
 	ON_WM_SIZE()
 	ON_WM_CTLCOLOR()
 	ON_WM_SIZING()
+	ON_NOTIFY(NM_CUSTOMDRAW, IDC_Ni, &CMFCVideoDlg::OnNMCustomdrawNi)
 END_MESSAGE_MAP()
 
 BEGIN_EASYSIZE_MAP(CMFCVideoDlg)
@@ -168,6 +184,26 @@ BOOL CMFCVideoDlg::OnInitDialog()
 	GetClientRect(&m_rect);
 	limit_rect = m_rect;
 	init();
+
+	// 设置按钮样式
+	m_BtnInsert.SetTextColor(RGB(0, 0, 0));
+	m_BtnInsert.SetSkin(IDB_BITMAP_NORMAL, IDB_BITMAP_DOWN);
+	m_BtnDelete.SetTextColor(RGB(0, 0, 0));
+	m_BtnDelete.SetSkin(IDB_BITMAP_NORMAL, IDB_BITMAP_DOWN);
+	m_BtnLoaddata.SetTextColor(RGB(0, 0, 0));
+	m_BtnLoaddata.SetSkin(IDB_BITMAP_NORMAL, IDB_BITMAP_DOWN);
+	m_BtnBegin.SetTextColor(RGB(0, 0, 0));
+	m_BtnBegin.SetSkin(IDB_BITMAP_NORMAL, IDB_BITMAP_DOWN);
+	m_BtnEnd.SetTextColor(RGB(0, 0, 0));
+	m_BtnEnd.SetSkin(IDB_BITMAP_NORMAL, IDB_BITMAP_DOWN);
+	m_BtnShowCur.SetTextColor(RGB(0, 0, 0));
+	m_BtnShowCur.SetSkin(IDB_BITMAP_NORMAL, IDB_BITMAP_DOWN);
+	m_BtnSetAlert.SetTextColor(RGB(0, 0, 0));
+	m_BtnSetAlert.SetSkin(IDB_BITMAP_NORMAL, IDB_BITMAP_DOWN);
+	m_BtnAlertInfo.SetTextColor(RGB(0, 0, 0));
+	m_BtnAlertInfo.SetSkin(IDB_BITMAP_NORMAL, IDB_BITMAP_DOWN);
+
+
 	((CButton *)GetDlgItem(IDC_RADIO1))->SetCheck(TRUE);    // Radio 1默认选上
 	((CButton *)GetDlgItem(IDC_RADIO2))->SetCheck(FALSE);
 	((CButton *)GetDlgItem(IDC_RADIO3))->SetCheck(FALSE);
@@ -195,20 +231,29 @@ BOOL CMFCVideoDlg::OnInitDialog()
 	m_ListControl.InsertColumn(1, _T("数据名称"), LVCFMT_CENTER, 70);
 	m_ListControl.InsertColumn(2, _T("驾驶员"), LVCFMT_CENTER, 60);
 	m_ListControl.InsertColumn(3, _T("路径"), LVCFMT_CENTER, (iLength - 170));
+	//m_ListControl.SetBkColor(RGB(230,230,250));
 
 	// 视频对象初始化
 	m_pVideoInfo1 = new CvideoIf();
-	m_pPicCtlHdc1 = GetDlgItem(IDC_PicCtl1)->GetDC()->GetSafeHdc();   //获取窗口句柄
-	GetDlgItem(IDC_PicCtl1)->GetClientRect(&m_PicCtlRect1);   //获取客户区域坐标
+	m_pPicCtlHdc1 = m_PicCtrl_Video1.GetDC()->GetSafeHdc();
+	m_PicCtrl_Video1.GetClientRect(&m_PicCtlRect1);
+	//m_pPicCtlHdc1 = GetDlgItem(IDC_PicCtl1)->GetDC()->GetSafeHdc();   //获取窗口句柄
+	//GetDlgItem(IDC_PicCtl1)->GetClientRect(&m_PicCtlRect1);   //获取客户区域坐标
 	m_pVideoInfo2 = new CvideoIf();
-	m_pPicCtlHdc2 = GetDlgItem(IDC_PicCtl2)->GetDC()->GetSafeHdc();   //获取窗口句柄
-	GetDlgItem(IDC_PicCtl2)->GetClientRect(&m_PicCtlRect2);   //获取客户区域坐标
+	m_pPicCtlHdc2 = m_PicCtrl_Video2.GetDC()->GetSafeHdc();
+	m_PicCtrl_Video2.GetClientRect(&m_PicCtlRect2);
+	//m_pPicCtlHdc2 = GetDlgItem(IDC_PicCtl2)->GetDC()->GetSafeHdc();   //获取窗口句柄
+	//GetDlgItem(IDC_PicCtl2)->GetClientRect(&m_PicCtlRect2);   //获取客户区域坐标
 	m_pVideoInfo3 = new CvideoIf();
-	m_pPicCtlHdc3 = GetDlgItem(IDC_PicCtl3)->GetDC()->GetSafeHdc();   //获取窗口句柄
-	GetDlgItem(IDC_PicCtl3)->GetClientRect(&m_PicCtlRect3);   //获取客户区域坐标
+	m_pPicCtlHdc3 = m_PicCtrl_Video3.GetDC()->GetSafeHdc();
+	m_PicCtrl_Video3.GetClientRect(&m_PicCtlRect3);
+	//m_pPicCtlHdc3 = GetDlgItem(IDC_PicCtl3)->GetDC()->GetSafeHdc();   //获取窗口句柄
+	//GetDlgItem(IDC_PicCtl3)->GetClientRect(&m_PicCtlRect3);   //获取客户区域坐标
 	m_pVideoInfo4 = new CvideoIf();
-	m_pPicCtlHdc4 = GetDlgItem(IDC_PicCtl4)->GetDC()->GetSafeHdc();   //获取窗口句柄
-	GetDlgItem(IDC_PicCtl4)->GetClientRect(&m_PicCtlRect4);   //获取客户区域坐标
+	m_pPicCtlHdc4 = m_PicCtrl_Video4.GetDC()->GetSafeHdc();
+	m_PicCtrl_Video4.GetClientRect(&m_PicCtlRect4);
+	//m_pPicCtlHdc4 = GetDlgItem(IDC_PicCtl4)->GetDC()->GetSafeHdc();   //获取窗口句柄
+	//GetDlgItem(IDC_PicCtl4)->GetClientRect(&m_PicCtlRect4);   //获取客户区域坐标
 
 	// 导入初始数据
 	loadData();
@@ -245,9 +290,9 @@ BOOL CMFCVideoDlg::OnInitDialog()
 	// 滑动条
 	m_Slider_All = (CSliderCtrl *)GetDlgItem(IDC_SLIDERALL);
 	slider_count = 0;
-	m_Slider_All->SetRange(1, 1000, TRUE);
-	m_Slider_All->SetPos(slider_count);
-	slider_count++;
+	//m_Slider_All->SetRange(1, 1000, TRUE);
+	//m_Slider_All->SetPos(slider_count);
+	//slider_count++;
 	//ShowWindow(SW_MAXIMIZE);    //窗口最大化弹出
 	//SetWindowLong(this->m_hWnd, GWL_STYLE, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU);
 	INIT_EASYSIZE;
@@ -267,6 +312,8 @@ void CMFCVideoDlg::init()
 	m_index_radar = 0;
 	m_Row = 0;
 	m_Col = 0;
+	cur_frame_count = 0;
+	all_played_frames = 0;
 	video_index_1 = 0;
 	video_index_2 = 0;
 	video_index_3 = 0;
@@ -378,10 +425,12 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 				cvCopy(frame, m_pVideoInfo1->m_pFrameImage);//将图像拷贝自己的空间
 				cvFlip(m_pVideoInfo1->m_pFrameImage);//如果图象是倒置的时候使用
 				m_CvvImage1.CopyOf(m_pVideoInfo1->m_pFrameImage);
+				m_PicCtrl_Video1.GetClientRect(&m_PicCtlRect1);
 				m_CvvImage1.DrawToHDC(m_pPicCtlHdc1, m_PicCtlRect1);
 			}
 			else if (video_index_1 < path_video1.size())    // 播放下一个视频
 			{
+				all_played_frames += total_frames[video_index_1 - 1];
 				tmpDir = m_resDir + _T("\\") + _T(VIDEODIR_ONE);
 				// 释放上一个视频的资源
 				cvReleaseCapture(&m_pVideoInfo1->m_pCapture);
@@ -393,6 +442,15 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 				//MessageBox(path_video1.front());
 				video_index_1++;
 			}
+			slider_count++;
+			m_Slider_All->SetPos(slider_count);
+
+			// FOR TEST
+			CString text;
+			text.Format(_T("%d"), video_index_1);
+			test_video_num.SetWindowTextA(text);
+			text.Format(_T("%d"), slider_count);
+			test_video_frames.SetWindowTextA(text);
 		}
 		break;
 	case TIMER_VIDEO_2:
@@ -437,10 +495,10 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 			}
 		}
 		break;
-	case TIMER_PROGRESS:
-		m_Slider_All->SetPos(slider_count);
-		slider_count++;
-		break;
+	//case TIMER_PROGRESS:
+	//	m_Slider_All->SetPos(slider_count);
+	//	slider_count++;
+	//	break;
 	case TIMER_CURVE:
 	{
 		int type;
@@ -542,7 +600,7 @@ void CMFCVideoDlg::StopTimer()
 	KillTimer(TIMER_VIDEO_2);
 	KillTimer(TIMER_VIDEO_3);
 	KillTimer(TIMER_VIDEO_4);
-	KillTimer(TIMER_PROGRESS);
+	//KillTimer(TIMER_PROGRESS);
 	KillTimer(TIMER_CURVE);
 	KillTimer(TIMER_RADAR);
 }
@@ -551,13 +609,13 @@ void CMFCVideoDlg::StartTimer()
 {
 	UINT eslapse;
 	if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
+		eslapse = 40;
+	}
+	else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
 		eslapse = 20;
 	}
 	else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
-		eslapse = 15;
-	}
-	else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
-		eslapse = 8;
+		eslapse = 10;
 	}
 	else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
 		eslapse = 5;
@@ -566,7 +624,7 @@ void CMFCVideoDlg::StartTimer()
 	SetTimer(TIMER_VIDEO_2, eslapse, NULL);
 	SetTimer(TIMER_VIDEO_3, eslapse, NULL);
 	SetTimer(TIMER_VIDEO_4, eslapse, NULL);
-	SetTimer(TIMER_PROGRESS, 200, NULL);
+	//SetTimer(TIMER_PROGRESS, 200, NULL);
 	SetTimer(TIMER_CURVE, 50, NULL);
 	SetTimer(TIMER_RADAR, 100, NULL);
 }
@@ -726,6 +784,15 @@ void CMFCVideoDlg::OnBnClickedVideoPlay()   //button 播放视频
 	path = m_resDir + _T("\\") + name_Radar;
 	Excel_Radar.OpenExcel(path);
 	load_radar_data();
+
+	// set the slider
+	int all_frames = 0;
+	for (int i = 0; i < total_frames.size(); i++)
+	{
+		all_frames += total_frames[i];
+	}
+	m_Slider_All->SetRange(0, all_frames, TRUE);
+	m_Slider_All->SetPos(slider_count);
 }
 
 void CMFCVideoDlg::ChangeVideo(CString dirName, CString sName, CvideoIf* cvinfo)
@@ -736,10 +803,10 @@ void CMFCVideoDlg::ChangeVideo(CString dirName, CString sName, CvideoIf* cvinfo)
 	if (cvinfo->m_pCapture)
 	{
 		//获取帧宽、帧高度
-		cvinfo->m_nFrameWidth = cvGetCaptureProperty(m_pVideoInfo1->m_pCapture, CV_CAP_PROP_FRAME_WIDTH);
-		cvinfo->m_nFrameHeight = cvGetCaptureProperty(m_pVideoInfo1->m_pCapture, CV_CAP_PROP_FRAME_HEIGHT);
-		cvinfo->m_pFrameImage = cvCreateImage(cvSize(m_pVideoInfo1->m_nFrameWidth, m_pVideoInfo1->m_nFrameHeight), 8, 3);
-		cvZero(cvinfo->m_pFrameImage);
+		cvinfo->m_nFrameWidth = cvGetCaptureProperty(cvinfo->m_pCapture, CV_CAP_PROP_FRAME_WIDTH);
+		cvinfo->m_nFrameHeight = cvGetCaptureProperty(cvinfo->m_pCapture, CV_CAP_PROP_FRAME_HEIGHT);
+		cvinfo->m_pFrameImage = cvCreateImage(cvSize(cvinfo->m_nFrameWidth, cvinfo->m_nFrameHeight), IPL_DEPTH_8U, 3);  // 创建图像首地址，并分配存储空间
+		cvZero(cvinfo->m_pFrameImage);    // 新建图像后紧接着加个cvZero（）函数，就是将图像中的每个像素都置为0，那么显示的frame自然就是全黑
 	}
 }
 
@@ -760,7 +827,7 @@ void CMFCVideoDlg::OnBnClickedVideoStop()     //button 暂停
 		KillTimer(TIMER_VIDEO_3);
 		KillTimer(TIMER_VIDEO_4);
 		KillTimer(TIMER_CURVE);
-		KillTimer(TIMER_PROGRESS);
+		//KillTimer(TIMER_PROGRESS);
 		KillTimer(TIMER_RADAR);
 	}
 	else {
@@ -768,21 +835,17 @@ void CMFCVideoDlg::OnBnClickedVideoStop()     //button 暂停
 
 		UINT eslapse;
 		if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
-			eslapse = 20;
+			eslapse = 40;    // X1
 		}
 		else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
-			eslapse = 15;
+			eslapse = 20;	// X2
 		}
 		else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
-			eslapse = 8;
+			eslapse = 10;	// X4
 		}
 		else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
-			eslapse = 5;
+			eslapse = 5;	// X8
 		}
-		SetTimer(TIMER_VIDEO_1, eslapse, NULL);
-		SetTimer(TIMER_VIDEO_2, eslapse, NULL);
-		SetTimer(TIMER_VIDEO_3, eslapse, NULL);
-		SetTimer(TIMER_VIDEO_4, eslapse, NULL);
 
 		// 绘制惯导数据
 		int type;
@@ -800,8 +863,12 @@ void CMFCVideoDlg::OnBnClickedVideoStop()     //button 暂停
 		DrawRadarPerpare();
 
 		// 精度条
-		SetTimer(TIMER_PROGRESS, 200, NULL);
+		//SetTimer(TIMER_PROGRESS, 200, NULL);
 		count = 1;
+		SetTimer(TIMER_VIDEO_1, eslapse, NULL);
+		SetTimer(TIMER_VIDEO_2, eslapse, NULL);
+		SetTimer(TIMER_VIDEO_3, eslapse, NULL);
+		SetTimer(TIMER_VIDEO_4, eslapse, NULL);
 	}
 }
 
@@ -943,12 +1010,21 @@ void CMFCVideoDlg::GetPathFile(CString path, vector<CString> &all_file)
 {
 	CFileFind finder;
 	CString sName = "";
-	BOOL find_one = finder.FindFile(path + _T("\\*.mp4"));
+	BOOL find_one = finder.FindFile(path + _T("\\*.avi"));
+	CString tmp;
+	CvCapture* cv_tmp = NULL;
+	int frames = 0;
 	//MessageBox((path + _T("\\*.mp4")));
 	while (find_one)
 	{
 		find_one = finder.FindNextFileA();
 		sName = finder.GetFileName();
+		// get all video frames
+		tmp = path + _T("\\") + sName;
+		cv_tmp = cvCreateFileCapture(tmp);
+		frames = (int)cvGetCaptureProperty(cv_tmp, CV_CAP_PROP_FRAME_COUNT); // 
+		total_frames.push_back(frames);
+		cvReleaseCapture(&cv_tmp);
 		//MessageBox(sName);
 		all_file.push_back(sName);
 	}
@@ -1514,10 +1590,9 @@ void CMFCVideoDlg::OnBnClickedAlertDetail()
 
 void CMFCVideoDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
-	//int pos;
-	//pos = m_Slider_All->GetPos();
-	//m_Slider_All->SetPos(pos);
 	StopTimer();
+	int old_slider_count;
+	CString tmpDir;
 	switch (nSBCode)
 	{
 	// mean: https://www.cnblogs.com/HPAHPA/p/7885759.html
@@ -1525,6 +1600,26 @@ void CMFCVideoDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 		slider_count = nPos;
 		m_global_count = m_global_count + 20;
 		m_index_speed = m_index_speed + 20;
+
+		// 视频拖动处理
+		if (all_played_frames < slider_count && all_played_frames + total_frames[video_index_1 - 1] > slider_count) // 仍然在一个视频内
+		{
+			cvSetCaptureProperty(m_pVideoInfo1->m_pCapture, CV_CAP_PROP_POS_FRAMES, slider_count - all_played_frames);
+		}
+		else { // 跨视频拖动
+			cvReleaseCapture(&m_pVideoInfo1->m_pCapture);    // 释放当前视频资源
+			m_pVideoInfo1->m_pCapture = NULL;
+			cvReleaseImage(&m_pVideoInfo1->m_pFrameImage);
+			m_pVideoInfo1->m_pFrameImage = NULL;
+			tmpDir = m_resDir + _T("\\") + _T(VIDEODIR_ONE);
+			video_index_1 = get_video_index_after_slider(total_frames, nPos);
+			ChangeVideo(tmpDir, path_video1[video_index_1], m_pVideoInfo1);
+			all_played_frames = 0;
+			for (int i = 0; i < video_index_1; i++)
+			{
+				all_played_frames += total_frames[i];
+			}
+		}
 		break;
 	case SB_LEFT:
 		slider_count = 0; //https://bbs.csdn.net/topics/390670320
@@ -1567,12 +1662,21 @@ void CMFCVideoDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 	StartTimer();
 }
 
-
+int CMFCVideoDlg::get_video_index_after_slider(vector<int> &v, int pos)
+{
+	int count = 0;
+	for (int i = 0; i < v.size(); i++)
+	{
+		count += v[i];
+		if (count > pos)
+			return i;
+	}
+	return -1;
+}
 
 void CMFCVideoDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
-	
 	if (TRUE)
 	{
 		m_WinsizeManage.ResizeWindow();
@@ -1614,18 +1718,35 @@ void CMFCVideoDlg::ChangeSize(CWnd* pWnd, int cx, int cy)
 HBRUSH CMFCVideoDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
 	HBRUSH hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
-
-	if (pWnd->GetDlgCtrlID() == IDC_STATIC)
+	UINT id = pWnd->GetDlgCtrlID();
+	if (id == IDC_STATIC)
 	{
 		pDC->SetTextColor(RGB(0, 0, 0));
 		pDC->SetBkMode(TRANSPARENT);
 		return (HBRUSH)GetStockObject(NULL_BRUSH);
 	}
-	if (pWnd->GetDlgCtrlID() == IDC_VALUE)
+	if (id == IDC_VALUE)
 	{
 		pDC->SetTextColor(RGB(0, 0, 0));
 		pDC->SetBkColor(RGB(211, 211, 211));
 		return (HBRUSH)GetStockObject(NULL_BRUSH);
+	}
+	if (id == IDC_RADIO1 || id == IDC_RADIO2 || id == IDC_RADIO3 || id == IDC_RADIO4 || id == IDC_RADIO_SPEED_X || id == IDC_RADIO_SPEED_Y || id == IDC_RADIO_SPEED_Z)
+	{
+		pDC->SetTextColor(RGB(0, 0, 0));
+		pDC->SetBkColor(RGB(211, 211, 211));
+		return (HBRUSH)GetStockObject(NULL_BRUSH);
+	}
+	if (id == IDC_Ni)
+	{
+		pDC->SetBkColor(RGB(230, 230, 250));
+		return (HBRUSH)GetStockObject(NULL_BRUSH);
+	}
+	if (id == IDC_SLIDERALL)
+	{
+		//pDC->SetTextColor(RGB(211, 211, 211));
+		//pDC->SetBkColor(RGB(250, 0, 0));
+		//return (HBRUSH)GetStockObject(NULL_BRUSH);
 	}
 	return hbr;
 }
@@ -1637,4 +1758,25 @@ void CMFCVideoDlg::OnSizing(UINT fwSide, LPRECT pRect)
 
 	// TODO: 在此处添加消息处理程序代码
 	EASYSIZE_MINSIZE(limit_rect.Width(), limit_rect.Height(), fwSide, pRect);
+}
+
+
+void CMFCVideoDlg::OnNMCustomdrawNi(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMTVCUSTOMDRAW pNMCD = reinterpret_cast<LPNMTVCUSTOMDRAW>(pNMHDR);
+	// TODO: 在此添加控件通知处理程序代码
+	NMCUSTOMDRAW nmCustomDraw = pNMCD->nmcd;
+	switch (nmCustomDraw.dwDrawStage)
+	{
+	case CDDS_ITEMPOSTPAINT:
+		pNMCD->clrTextBk = RGB(255, 0, 0);
+		pNMCD->clrText = RGB(255, 255, 255);
+	default:
+		break;
+	}
+	*pResult = 0;
+	*pResult |= CDRF_NOTIFYPOSTPAINT;
+	*pResult |= CDRF_NOTIFYITEMDRAW;
+	*pResult |= CDRF_DODEFAULT;
+	return;
 }

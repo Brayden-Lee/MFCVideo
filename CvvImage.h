@@ -22,7 +22,7 @@ public:
 #if defined WIN32 || defined _WIN32
 	virtual bool  LoadRect(const char* filename,
 		int desired_color, RECT r)
-	{
+	{	
 		return LoadRect(filename, desired_color,
 			cvRect(r.left, r.top, r.right - r.left, r.bottom - r.top));
 	}

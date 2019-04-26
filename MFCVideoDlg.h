@@ -11,10 +11,12 @@
 #include "CvvImage.h"
 #include "constant.h"
 #include "CWindowSizeManager.h"
+#include "xSkinButton.h"
 #include <vector>
 #include <map>
 #include <string>
 #include <sstream>
+#include "opencv2/opencv.hpp"
 
 using namespace std;
 #pragma once
@@ -56,18 +58,24 @@ protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
 
 public:
+	CStatic test_video_num;
+	CStatic test_video_frames;
+	int cur_frame_count;
+	int all_played_frames;    // 放完的视频的帧累计
 	CExport2Excel Excel_Guandao;
 	CExport2Excel Excel_Radar;
 	CString name_GuanDao;
 	CString name_Radar;
 	UINT mTotalTime;
 	CString m_resDir;
-	UINT video_index_1;
+	UINT video_index_1;    // 将要播放的视频序号
 	vector<CString> path_video1;
 	CvideoIf* m_pVideoInfo1;
 	HDC m_pPicCtlHdc1;
 	CRect m_PicCtlRect1;
 	CvvImage m_CvvImage1;
+	CStatic m_PicCtrl_Video1;
+	vector<int> total_frames;
 
 	UINT video_index_2;
 	vector<CString> path_video2;
@@ -75,6 +83,7 @@ public:
 	HDC m_pPicCtlHdc2;
 	CRect m_PicCtlRect2;
 	CvvImage m_CvvImage2;
+	CStatic m_PicCtrl_Video2;
 
 	UINT video_index_3;
 	vector<CString> path_video3;
@@ -82,6 +91,7 @@ public:
 	HDC m_pPicCtlHdc3;
 	CRect m_PicCtlRect3;
 	CvvImage m_CvvImage3;
+	CStatic m_PicCtrl_Video3;
 
 	UINT video_index_4;
 	vector<CString> path_video4;
@@ -89,6 +99,7 @@ public:
 	HDC m_pPicCtlHdc4;
 	CRect m_PicCtlRect4;
 	CvvImage m_CvvImage4;
+	CStatic m_PicCtrl_Video4;
 
 	CChartCtrl m_ChartCtrl_Curve1;
 	// 实现
@@ -116,13 +127,22 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
+	CxSkinButton m_BtnInsert;
+	CxSkinButton m_BtnDelete;
+	CxSkinButton m_BtnLoaddata;
+	CxSkinButton m_BtnBegin;
+	CxSkinButton m_BtnEnd;
+	CxSkinButton m_BtnShowCur;
+	CxSkinButton m_BtnSetAlert;
+	CxSkinButton m_BtnAlertInfo;
+
 	CWindowSizeMange m_WinsizeManage;
 	CRect m_rect;
 	CRect limit_rect;
 	map<int, int> over_speed;
 	CListCtrl m_ListControl;
 	CSliderCtrl *m_Slider_All;
-	UINT slider_count;
+	UINT slider_count;    // 当前进度，也反映视频播放当前帧
 	CEdit m_Edit;
 	CStatic m_Obstacle_Panel;
 	CMeter	m_Meter_Panel;
@@ -178,5 +198,7 @@ public:
 	afx_msg void ChangeSize(CWnd* pWnd, int cx, int cy);
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 	afx_msg void OnSizing(UINT fwSide, LPRECT pRect);
+	afx_msg void OnNMCustomdrawNi(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg int get_video_index_after_slider(vector<int> &v, int pos);
 };
 #pragma once

@@ -92,3 +92,11 @@ Level: Slow;Normal;Overspeed;High Overspeed;
 
 颜色对照：https://wenku.baidu.com/view/64de2057f01dc281e53af00b.html
 SliderCtrl: https://wenku.baidu.com/view/bc9eabc6b9d528ea80c77912.html
+
+视频播放：https://blog.csdn.net/fulai0_0/article/details/39813751
+
+1000ms ====  25帧
+40ms  ==== 1 帧
+
+4个视频一定同时？
+以视频为主来进行拖动？
