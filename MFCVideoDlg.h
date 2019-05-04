@@ -119,6 +119,14 @@ public:
 
 	int m_Row;
 	int m_Col;
+
+	// 坐标轴上下限
+	double y_min;
+	double y_max;
+
+	// 加载数据进度条
+	UINT progress_total;
+	UINT progress_cur;
 protected:
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
@@ -153,6 +161,8 @@ public:
 	afx_msg void OnBnClickedVideoClose();
 	afx_msg void OnBnClickedVideoPlay();
 	afx_msg void OnBnClickedVideoStop();
+	afx_msg UINT getSpeedRadio();
+	afx_msg int getSpeedType();
 	afx_msg void OnBnClickedRadio1();
 	afx_msg void OnBnClickedRadio2();
 	afx_msg void OnBnClickedRadio3();
@@ -174,6 +184,7 @@ public:
 
 	afx_msg void load_speed_data();    // Guandao data
 	afx_msg void load_radar_data();    // Radar data
+	afx_msg void display_loading_progress();
 	afx_msg void DrawSpeed(int type, bool firsttime);
 	afx_msg void DrawOverSpeed();
 	afx_msg void DrawRadarData();
@@ -190,7 +201,7 @@ public:
 	afx_msg void DrawRadarPerpare();
 	afx_msg void OnBnClickedDispalyValue();
 	afx_msg void StopTimer();
-	afx_msg void StartTimer();
+	afx_msg void StartTimer(UINT eslapse);
 	afx_msg void OnBnClickedSetAlert();
 	afx_msg void OnBnClickedAlertDetail();
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);

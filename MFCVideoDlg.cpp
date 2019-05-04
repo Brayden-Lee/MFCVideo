@@ -10,6 +10,7 @@
 #include "ValueDisplayDlg.h"
 #include "AlertDisplayDlg.h"
 #include "ChooseAlertLevel.h"
+#include "ProgressWnd.h"
 #include "constant.h"
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -442,6 +443,9 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 				//MessageBox(path_video1.front());
 				video_index_1++;
 			}
+			else {
+				MessageBox("Video play has finished!");
+			}
 			slider_count++;
 			m_Slider_All->SetPos(slider_count);
 
@@ -495,22 +499,9 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 			}
 		}
 		break;
-	//case TIMER_PROGRESS:
-	//	m_Slider_All->SetPos(slider_count);
-	//	slider_count++;
-	//	break;
 	case TIMER_CURVE:
 	{
-		int type;
-		if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_X))->GetCheck()) {
-			type = SPEED_X;
-		}
-		else if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_Y))->GetCheck()) {
-			type = SPEED_Y;
-		}
-		else {
-			type = SPEED_Z;
-		}
+		int type = getSpeedType();
 		double x[30], y[30];
 		int row = speed_X.size();
 		m_index_speed++;
@@ -520,6 +511,7 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 			m_global_count = 0;
 			KillTimer(TIMER_CURVE);
 			DrawSpeed(type, true);
+			SetTimer(TIMER_CURVE, 50, NULL);
 			break;
 		}
 		for (int i = 0; i < MAX_PLOT_RANGE; i++)
@@ -569,8 +561,8 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 			double y1[2];
 			x1[0] = m_cur_index;
 			x1[1] = m_cur_index;
-			y1[0] = 0.1;
-			y1[1] = -0.1;
+			y1[0] = y_min;
+			y1[1] = y_max;
 			CChartLineSerie *lineScale;
 			lineScale = m_ChartCtrl_Curve1.CreateLineSerie();
 			lineScale->SetSeriesOrdering(poNoOrdering);
@@ -580,7 +572,6 @@ void CMFCVideoDlg::OnTimer(UINT_PTR nIDEvent)    //timer
 		}
 
 		m_ChartCtrl_Curve1.EnableRefresh(true);
-		
 		m_global_count++;
 		break;
 	}
@@ -600,33 +591,18 @@ void CMFCVideoDlg::StopTimer()
 	KillTimer(TIMER_VIDEO_2);
 	KillTimer(TIMER_VIDEO_3);
 	KillTimer(TIMER_VIDEO_4);
-	//KillTimer(TIMER_PROGRESS);
 	KillTimer(TIMER_CURVE);
 	KillTimer(TIMER_RADAR);
 }
 
-void CMFCVideoDlg::StartTimer()
+void CMFCVideoDlg::StartTimer(UINT eslapse)
 {
-	UINT eslapse;
-	if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
-		eslapse = 40;
-	}
-	else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
-		eslapse = 20;
-	}
-	else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
-		eslapse = 10;
-	}
-	else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
-		eslapse = 5;
-	}
 	SetTimer(TIMER_VIDEO_1, eslapse, NULL);
 	SetTimer(TIMER_VIDEO_2, eslapse, NULL);
 	SetTimer(TIMER_VIDEO_3, eslapse, NULL);
 	SetTimer(TIMER_VIDEO_4, eslapse, NULL);
-	//SetTimer(TIMER_PROGRESS, 200, NULL);
-	SetTimer(TIMER_CURVE, 50, NULL);
-	SetTimer(TIMER_RADAR, 100, NULL);
+	SetTimer(TIMER_CURVE, eslapse*2, NULL);    // 一行 = 两帧
+	SetTimer(TIMER_RADAR, eslapse, NULL);
 }
 
 void CMFCVideoDlg::OnClose()   // 整个退出
@@ -779,10 +755,13 @@ void CMFCVideoDlg::OnBnClickedVideoPlay()   //button 播放视频
 	CString path;
 	path = m_resDir + _T("\\") + name_GuanDao;
 	Excel_Guandao.OpenExcel(path);    // 可能使用的单例模式，只能有一个对象
-	load_speed_data();
-
 	path = m_resDir + _T("\\") + name_Radar;
 	Excel_Radar.OpenExcel(path);
+	// 设置数据加载进度条
+	//progress_total = Excel_Guandao.GetRowCount() + Excel_Radar.GetRowCount();
+	//progress_cur = 0;
+	//display_loading_progress();
+	load_speed_data();
 	load_radar_data();
 
 	// set the slider
@@ -792,7 +771,22 @@ void CMFCVideoDlg::OnBnClickedVideoPlay()   //button 播放视频
 		all_frames += total_frames[i];
 	}
 	m_Slider_All->SetRange(0, all_frames, TRUE);
+	slider_count = 0;
 	m_Slider_All->SetPos(slider_count);
+}
+
+void CMFCVideoDlg::display_loading_progress()
+{
+	CProgressWnd *pro = new CProgressWnd(NULL, _T("正在加载数据"), TRUE);
+	pro->SetStep(1);
+	pro->SetWindowSize(1, 300);
+	pro->SetRange(0, progress_total);
+	for (UINT i = 0; i < progress_total; i++)
+	{
+		pro->StepIt();
+		pro->PeekAndPump();
+	}
+	delete pro;
 }
 
 void CMFCVideoDlg::ChangeVideo(CString dirName, CString sName, CvideoIf* cvinfo)
@@ -822,54 +816,58 @@ void CMFCVideoDlg::OnBnClickedVideoStop()     //button 暂停
 	{
 		SetDlgItemTextA(IDC_VIDEO_STOP, ("播放"));
 		count = 0;
-		KillTimer(TIMER_VIDEO_1);
-		KillTimer(TIMER_VIDEO_2);
-		KillTimer(TIMER_VIDEO_3);
-		KillTimer(TIMER_VIDEO_4);
-		KillTimer(TIMER_CURVE);
-		//KillTimer(TIMER_PROGRESS);
-		KillTimer(TIMER_RADAR);
+		StopTimer();
 	}
 	else {
 		SetDlgItemTextA(IDC_VIDEO_STOP, ("暂停"));
 
-		UINT eslapse;
-		if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
-			eslapse = 40;    // X1
-		}
-		else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
-			eslapse = 20;	// X2
-		}
-		else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
-			eslapse = 10;	// X4
-		}
-		else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
-			eslapse = 5;	// X8
-		}
-
+		int type = getSpeedType();
 		// 绘制惯导数据
-		int type;
-		if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_X))->GetCheck()) {
-			type = SPEED_X;
-		}
-		else if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_Y))->GetCheck()) {
-			type = SPEED_Y;
-		}
-		else {
-			type = SPEED_Z;
-		}
 		DrawSpeed(type, true);
 		// 绘制雷达数据
 		DrawRadarPerpare();
-
-		// 精度条
-		//SetTimer(TIMER_PROGRESS, 200, NULL);
 		count = 1;
-		SetTimer(TIMER_VIDEO_1, eslapse, NULL);
-		SetTimer(TIMER_VIDEO_2, eslapse, NULL);
-		SetTimer(TIMER_VIDEO_3, eslapse, NULL);
-		SetTimer(TIMER_VIDEO_4, eslapse, NULL);
+		StartTimer(getSpeedRadio());
 	}
+}
+
+UINT CMFCVideoDlg::getSpeedRadio()
+{
+	UINT eslapse;
+	if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
+		eslapse = 40;    // X1
+	}
+	else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
+		eslapse = 20;	// X2
+	}
+	else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
+		eslapse = 10;	// X4
+	}
+	else if (((CButton *)GetDlgItem(IDC_RADIO1))->GetCheck()) {
+		eslapse = 5;	// X8
+	}
+	return eslapse;
+}
+
+int CMFCVideoDlg::getSpeedType()
+{
+	int type;
+	if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_X))->GetCheck()) {
+		type = SPEED_X;
+		y_min = -2.0;
+		y_max = 0.0;
+	}
+	else if (((CButton *)GetDlgItem(IDC_RADIO_SPEED_Y))->GetCheck()) {
+		type = SPEED_Y;
+		y_min = 0.0;
+		y_max = 2.0;
+	}
+	else {
+		type = SPEED_Z;
+		y_min = -10.0;
+		y_max = -8.0;
+	}
+	return type;
 }
 
 void CMFCVideoDlg::OnBnClickedRadio1()   //快进
@@ -879,14 +877,8 @@ void CMFCVideoDlg::OnBnClickedRadio1()   //快进
 	((CButton *)GetDlgItem(IDC_RADIO2))->SetCheck(FALSE);
 	((CButton *)GetDlgItem(IDC_RADIO3))->SetCheck(FALSE);
 	((CButton *)GetDlgItem(IDC_RADIO4))->SetCheck(FALSE);
-	KillTimer(TIMER_VIDEO_1);
-	KillTimer(TIMER_VIDEO_2);
-	KillTimer(TIMER_VIDEO_3);
-	KillTimer(TIMER_VIDEO_4);
-	SetTimer(TIMER_VIDEO_1, 20, NULL);
-	SetTimer(TIMER_VIDEO_2, 20, NULL);
-	SetTimer(TIMER_VIDEO_3, 20, NULL);
-	SetTimer(TIMER_VIDEO_4, 20, NULL);
+	StopTimer();
+	StartTimer(40);
 }
 
 void CMFCVideoDlg::OnBnClickedRadio2()
@@ -896,14 +888,8 @@ void CMFCVideoDlg::OnBnClickedRadio2()
 	((CButton *)GetDlgItem(IDC_RADIO2))->SetCheck(TRUE);
 	((CButton *)GetDlgItem(IDC_RADIO3))->SetCheck(FALSE);
 	((CButton *)GetDlgItem(IDC_RADIO4))->SetCheck(FALSE);
-	KillTimer(TIMER_VIDEO_1);
-	KillTimer(TIMER_VIDEO_2);
-	KillTimer(TIMER_VIDEO_3);
-	KillTimer(TIMER_VIDEO_4);
-	SetTimer(TIMER_VIDEO_1, 15, NULL);
-	SetTimer(TIMER_VIDEO_2, 15, NULL);
-	SetTimer(TIMER_VIDEO_3, 15, NULL);
-	SetTimer(TIMER_VIDEO_4, 15, NULL);
+	StopTimer();
+	StartTimer(20);
 }
 
 void CMFCVideoDlg::OnBnClickedRadio3()
@@ -913,14 +899,8 @@ void CMFCVideoDlg::OnBnClickedRadio3()
 	((CButton *)GetDlgItem(IDC_RADIO2))->SetCheck(FALSE);
 	((CButton *)GetDlgItem(IDC_RADIO3))->SetCheck(TRUE);
 	((CButton *)GetDlgItem(IDC_RADIO4))->SetCheck(FALSE);
-	KillTimer(TIMER_VIDEO_1);
-	KillTimer(TIMER_VIDEO_2);
-	KillTimer(TIMER_VIDEO_3);
-	KillTimer(TIMER_VIDEO_4);
-	SetTimer(TIMER_VIDEO_1, 8, NULL);
-	SetTimer(TIMER_VIDEO_2, 8, NULL);
-	SetTimer(TIMER_VIDEO_3, 8, NULL);
-	SetTimer(TIMER_VIDEO_4, 8, NULL);
+	StopTimer();
+	StartTimer(10);
 }
 
 void CMFCVideoDlg::OnBnClickedRadio4()
@@ -930,14 +910,8 @@ void CMFCVideoDlg::OnBnClickedRadio4()
 	((CButton *)GetDlgItem(IDC_RADIO2))->SetCheck(FALSE);
 	((CButton *)GetDlgItem(IDC_RADIO3))->SetCheck(FALSE);
 	((CButton *)GetDlgItem(IDC_RADIO4))->SetCheck(TRUE);
-	KillTimer(TIMER_VIDEO_1);
-	KillTimer(TIMER_VIDEO_2);
-	KillTimer(TIMER_VIDEO_3);
-	KillTimer(TIMER_VIDEO_4);
-	SetTimer(TIMER_VIDEO_1, 5, NULL);
-	SetTimer(TIMER_VIDEO_2, 5, NULL);
-	SetTimer(TIMER_VIDEO_3, 5, NULL);
-	SetTimer(TIMER_VIDEO_4, 5, NULL);
+	StopTimer();
+	StartTimer(5);
 }
 
 void CMFCVideoDlg::OnDblclkNi(NMHDR *pNMHDR, LRESULT *pResult)
@@ -1153,7 +1127,7 @@ void CMFCVideoDlg::OnNMHoverNi(NMHDR *pNMHDR, LRESULT *pResult)
 	MessageBox("hello");
 }
 
-// 加载数据
+// 加载数据 (惯导数据)
 void CMFCVideoDlg::load_speed_data()
 {
 	speed_X.clear();
@@ -1163,26 +1137,47 @@ void CMFCVideoDlg::load_speed_data()
 	int row;
 	int i;
 	row = Excel_Guandao.GetRowCount();
+
+	// 进度条
+	CProgressWnd *pro = new CProgressWnd(NULL, _T("正在加载数据惯导数据..."), TRUE);
+	pro->SetStep(1);
+	pro->SetWindowSize(1, 300);
+	pro->SetRange(0, row);
+
+
+	int left_begin = 3;    // X加速度的起始列 (从1开始)
 	for (i = 2; i <= row; i++)
 	{
-		text = Excel_Guandao.GetText(i, 2);    // Excel下标从1开始
+		text = Excel_Guandao.GetText(i, left_begin);    // Excel下标从1开始
 		speed_X.push_back(atof(text));    // CString to double
 
-		text = Excel_Guandao.GetText(i, 3);
+		text = Excel_Guandao.GetText(i, left_begin + 1);
 		speed_Y.push_back(atof(text));
 
-		text = Excel_Guandao.GetText(i, 4);
+		text = Excel_Guandao.GetText(i, left_begin + 2);
 		speed_Z.push_back(atof(text));
+
+		pro->StepIt();
+		pro->PeekAndPump();
 	}
+	delete pro;
 	//m_index_speed = 0;
 }
 
+// 雷达数据
 void CMFCVideoDlg::load_radar_data()
 {
 	CString text;
 	int row;
 	int i, j;
 	row = Excel_Radar.GetRowCount();
+
+	// 进度条
+	CProgressWnd *pro = new CProgressWnd(NULL, _T("正在加载数据雷达数据..."), TRUE);
+	pro->SetStep(1);
+	pro->SetWindowSize(1, 300);
+	pro->SetRange(0, row);
+
 	for (i = 2; i <= row; i += OBSTACLE_SIZE)
 	{
 		struct Loc loc;
@@ -1202,7 +1197,11 @@ void CMFCVideoDlg::load_radar_data()
 			pos.x[j - i] = atof(text);
 		}
 		m_obstacle.push_back(pos);
+
+		pro->StepIt();
+		pro->PeekAndPump();
 	}
+	delete pro;
 }
 
 void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
@@ -1284,8 +1283,8 @@ void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 		double y1[2];
 		x1[0] = m_cur_index;
 		x1[1] = m_cur_index;
-		y1[0] = 0.1;
-		y1[1] = -0.1;
+		y1[0] = y_min;
+		y1[1] = y_max;
 		CChartLineSerie *lineScale;
 		lineScale = m_ChartCtrl_Curve1.CreateLineSerie();
 		lineScale->SetSeriesOrdering(poNoOrdering);
@@ -1295,7 +1294,6 @@ void CMFCVideoDlg::DrawSpeed(int type, bool firsttime)
 	}
 	
 	m_ChartCtrl_Curve1.EnableRefresh(true);
-	SetTimer(TIMER_CURVE, 50, NULL);
 }
 
 void CMFCVideoDlg::DrawOverSpeed()
@@ -1320,7 +1318,7 @@ void CMFCVideoDlg::DrawOverSpeed()
 	for (int i = 0; i < v1.size(); i++)
 	{
 		x[0] = v1[i];
-		y[0] = -0.1;
+		y[0] = y_min;
 
 		//m_ChartCtrl_Curve1.EnableRefresh(false);
 		CChartPointsSerie *pointSerie;
@@ -1434,7 +1432,10 @@ void CMFCVideoDlg::OnBnClickedRadioSpeedX()
 	((CButton *)GetDlgItem(IDC_RADIO_SPEED_Y))->SetCheck(FALSE);
 	((CButton *)GetDlgItem(IDC_RADIO_SPEED_Z))->SetCheck(FALSE);
 	KillTimer(TIMER_CURVE);
+	y_min = -2.0;
+	y_max = 0.0;
 	DrawSpeed(SPEED_X, false);
+	SetTimer(TIMER_CURVE, 50, NULL);
 }
 
 
@@ -1444,7 +1445,10 @@ void CMFCVideoDlg::OnBnClickedRadioSpeedY()
 	((CButton *)GetDlgItem(IDC_RADIO_SPEED_Y))->SetCheck(TRUE);
 	((CButton *)GetDlgItem(IDC_RADIO_SPEED_Z))->SetCheck(FALSE);
 	KillTimer(TIMER_CURVE);
+	y_min = 0.0;
+	y_max = 2.0;
 	DrawSpeed(SPEED_Y, false);
+	SetTimer(TIMER_CURVE, 50, NULL);
 }
 
 
@@ -1454,7 +1458,10 @@ void CMFCVideoDlg::OnBnClickedRadioSpeedZ()
 	((CButton *)GetDlgItem(IDC_RADIO_SPEED_Y))->SetCheck(FALSE);
 	((CButton *)GetDlgItem(IDC_RADIO_SPEED_Z))->SetCheck(TRUE);
 	KillTimer(TIMER_CURVE);
-	DrawSpeed(SPEED_Z, false);
+	y_min = -10.0;
+	y_max = -8.0;
+	DrawSpeed(SPEED_Z, false); 
+	SetTimer(TIMER_CURVE, 50, NULL);
 }
 
 void CMFCVideoDlg::LoadMap()
@@ -1507,7 +1514,7 @@ void CMFCVideoDlg::DrawRadarPerpare()
 	LoadMap();
 	//ShowMap();
 	DrawCar();
-	SetTimer(TIMER_RADAR, 100, NULL);
+	//SetTimer(TIMER_RADAR, 100, NULL);
 }
 
 void CMFCVideoDlg::DrawCar()
@@ -1546,7 +1553,7 @@ void CMFCVideoDlg::OnBnClickedDispalyValue()
 	valuedisplayDlg.speed_y.Format("%lf", speed_Y[m_cur_index]);
 	valuedisplayDlg.speed_z.Format("%lf", speed_Z[m_cur_index]);
 	valuedisplayDlg.DoModal();
-	StartTimer();
+	StartTimer(getSpeedRadio());
 }
 
 
@@ -1557,14 +1564,14 @@ void CMFCVideoDlg::OnBnClickedSetAlert()
 
 	if (chooseAlertDlg.DoModal() == IDCANCEL)
 	{
-		StartTimer();
+		StartTimer(getSpeedRadio());
 		return;
 	}
 	int level = chooseAlertDlg.GetAlertLevel();
 	double x[1];
 	double y[1];
 	x[0] = m_cur_index;
-	y[0] = -0.1;
+	y[0] = y_min;
 
 	m_ChartCtrl_Curve1.EnableRefresh(false);
 	CChartPointsSerie *pointSerie;
@@ -1575,7 +1582,7 @@ void CMFCVideoDlg::OnBnClickedSetAlert()
 	pointSerie->SetColor(Alert_Color[level]);
 	m_ChartCtrl_Curve1.EnableRefresh(true);
 	over_speed.insert(pair<int, int>(m_cur_index, level));
-	StartTimer();
+	StartTimer(getSpeedRadio());
 }
 
 
@@ -1585,7 +1592,7 @@ void CMFCVideoDlg::OnBnClickedAlertDetail()
 	StopTimer();
 	
 	alertDlg.DoModal();
-	StartTimer();
+	StartTimer(getSpeedRadio());
 }
 
 void CMFCVideoDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
@@ -1593,13 +1600,16 @@ void CMFCVideoDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 	StopTimer();
 	int old_slider_count;
 	CString tmpDir;
+	old_slider_count = slider_count;
 	switch (nSBCode)
 	{
 	// mean: https://www.cnblogs.com/HPAHPA/p/7885759.html
 	case SB_THUMBTRACK:    // 拖动 
 		slider_count = nPos;
-		m_global_count = m_global_count + 20;
-		m_index_speed = m_index_speed + 20;
+		m_global_count = m_global_count + ((int)slider_count - old_slider_count) / 2;
+		m_index_speed = m_index_speed + ((int)slider_count - old_slider_count) / 2;
+		//m_global_count = m_global_count + 20;
+		//m_index_speed = m_index_speed + 20;
 
 		// 视频拖动处理
 		if (all_played_frames < slider_count && all_played_frames + total_frames[video_index_1 - 1] > slider_count) // 仍然在一个视频内
@@ -1619,35 +1629,127 @@ void CMFCVideoDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 			{
 				all_played_frames += total_frames[i];
 			}
+			video_index_1++;
 		}
 		break;
 	case SB_LEFT:
 		slider_count = 0; //https://bbs.csdn.net/topics/390670320
 		m_global_count = 0;
 		m_index_speed = -15;
+
+		// 拖到了最开始的地方
+		cvReleaseCapture(&m_pVideoInfo1->m_pCapture);
+		m_pVideoInfo1->m_pCapture = NULL;
+		cvReleaseImage(&m_pVideoInfo1->m_pFrameImage);
+		m_pVideoInfo1->m_pFrameImage = NULL;
+		tmpDir = m_resDir + _T("\\") + _T(VIDEODIR_ONE);
+		video_index_1 = 0;
+		ChangeVideo(tmpDir, path_video1[video_index_1], m_pVideoInfo1);
+		all_played_frames = 0;
+		video_index_1++;
 		break;
 	case SB_RIGHT:
 		slider_count = 1000;
 		break;
 	case SB_PAGELEFT:
-		slider_count = slider_count - 5;
-		m_global_count = m_global_count - 10;
-		m_index_speed = m_index_speed - 10;
+		slider_count = slider_count - 100;
+		m_global_count = m_global_count - 50;
+		m_index_speed = m_index_speed - 50;
+
+		if (all_played_frames < slider_count && all_played_frames + total_frames[video_index_1 - 1] > slider_count) // 仍然在一个视频内
+		{
+			cvSetCaptureProperty(m_pVideoInfo1->m_pCapture, CV_CAP_PROP_POS_FRAMES, slider_count - all_played_frames);
+		}
+		else { // 跨视频拖动
+			cvReleaseCapture(&m_pVideoInfo1->m_pCapture);    // 释放当前视频资源
+			m_pVideoInfo1->m_pCapture = NULL;
+			cvReleaseImage(&m_pVideoInfo1->m_pFrameImage);
+			m_pVideoInfo1->m_pFrameImage = NULL;
+			tmpDir = m_resDir + _T("\\") + _T(VIDEODIR_ONE);
+			video_index_1 = get_video_index_after_slider(total_frames, nPos);
+			ChangeVideo(tmpDir, path_video1[video_index_1], m_pVideoInfo1);
+			all_played_frames = 0;
+			for (int i = 0; i < video_index_1; i++)
+			{
+				all_played_frames += total_frames[i];
+			}
+			video_index_1++;
+		}
 		break;
 	case SB_PAGERIGHT:
-		slider_count = slider_count + 5;
-		m_global_count = m_global_count + 10;
-		m_index_speed = m_index_speed + 10;
+		slider_count = slider_count + 100;
+		m_global_count = m_global_count + 50;
+		m_index_speed = m_index_speed + 50;
+
+		if (all_played_frames < slider_count && all_played_frames + total_frames[video_index_1 - 1] > slider_count) // 仍然在一个视频内
+		{
+			cvSetCaptureProperty(m_pVideoInfo1->m_pCapture, CV_CAP_PROP_POS_FRAMES, slider_count - all_played_frames);
+		}
+		else { // 跨视频拖动
+			cvReleaseCapture(&m_pVideoInfo1->m_pCapture);    // 释放当前视频资源
+			m_pVideoInfo1->m_pCapture = NULL;
+			cvReleaseImage(&m_pVideoInfo1->m_pFrameImage);
+			m_pVideoInfo1->m_pFrameImage = NULL;
+			tmpDir = m_resDir + _T("\\") + _T(VIDEODIR_ONE);
+			video_index_1 = get_video_index_after_slider(total_frames, nPos);
+			ChangeVideo(tmpDir, path_video1[video_index_1], m_pVideoInfo1);
+			all_played_frames = 0;
+			for (int i = 0; i < video_index_1; i++)
+			{
+				all_played_frames += total_frames[i];
+			}
+			video_index_1++;
+		}
 		break;
 	case SB_LINELEFT:
-		slider_count = slider_count - 1;
-		m_global_count = m_global_count - 1;
-		m_index_speed = m_index_speed - 1;
+		slider_count = slider_count - 10;
+		m_global_count = m_global_count - 5;
+		m_index_speed = m_index_speed - 5;
+
+		if (all_played_frames < slider_count && all_played_frames + total_frames[video_index_1 - 1] > slider_count) // 仍然在一个视频内
+		{
+			cvSetCaptureProperty(m_pVideoInfo1->m_pCapture, CV_CAP_PROP_POS_FRAMES, slider_count - all_played_frames);
+		}
+		else { // 跨视频拖动
+			cvReleaseCapture(&m_pVideoInfo1->m_pCapture);    // 释放当前视频资源
+			m_pVideoInfo1->m_pCapture = NULL;
+			cvReleaseImage(&m_pVideoInfo1->m_pFrameImage);
+			m_pVideoInfo1->m_pFrameImage = NULL;
+			tmpDir = m_resDir + _T("\\") + _T(VIDEODIR_ONE);
+			video_index_1 = get_video_index_after_slider(total_frames, nPos);
+			ChangeVideo(tmpDir, path_video1[video_index_1], m_pVideoInfo1);
+			all_played_frames = 0;
+			for (int i = 0; i < video_index_1; i++)
+			{
+				all_played_frames += total_frames[i];
+			}
+			video_index_1++;
+		}
 		break;
 	case SB_LINERIGHT:
-		slider_count = slider_count + 1;
-		m_global_count = m_global_count + 1;
-		m_index_speed = m_index_speed + 1;
+		slider_count = slider_count + 10;
+		m_global_count = m_global_count + 5;
+		m_index_speed = m_index_speed + 5;
+
+		if (all_played_frames < slider_count && all_played_frames + total_frames[video_index_1 - 1] > slider_count) // 仍然在一个视频内
+		{
+			cvSetCaptureProperty(m_pVideoInfo1->m_pCapture, CV_CAP_PROP_POS_FRAMES, slider_count - all_played_frames);
+		}
+		else { // 跨视频拖动
+			cvReleaseCapture(&m_pVideoInfo1->m_pCapture);    // 释放当前视频资源
+			m_pVideoInfo1->m_pCapture = NULL;
+			cvReleaseImage(&m_pVideoInfo1->m_pFrameImage);
+			m_pVideoInfo1->m_pFrameImage = NULL;
+			tmpDir = m_resDir + _T("\\") + _T(VIDEODIR_ONE);
+			video_index_1 = get_video_index_after_slider(total_frames, nPos);
+			ChangeVideo(tmpDir, path_video1[video_index_1], m_pVideoInfo1);
+			all_played_frames = 0;
+			for (int i = 0; i < video_index_1; i++)
+			{
+				all_played_frames += total_frames[i];
+			}
+			video_index_1++;
+		}
 		break;
 	default:
 		break;
@@ -1657,9 +1759,10 @@ void CMFCVideoDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 		m_global_count = 0;
 		m_index_speed = -15;
 	}
+
 	m_Slider_All->SetPos(slider_count);
 	CDialogEx::OnHScroll(nSBCode, nPos, pScrollBar);
-	StartTimer();
+	StartTimer(getSpeedRadio());
 }
 
 int CMFCVideoDlg::get_video_index_after_slider(vector<int> &v, int pos)
